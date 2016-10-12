@@ -35,7 +35,7 @@ chrome.pageAction.onClicked.addListener(() => {
             return qcb();
           }
           console.log('starting task with url:', url);
-          chrome.tabs.create({ url }, (tab) => {
+          chrome.tabs.create({ url, active: false }, (tab) => {
 
             runningTasks[tab.id] = function () {
               chrome.tabs.sendMessage(tab.id, { action: 'parseInfo' }, function(response) {
@@ -48,17 +48,6 @@ chrome.pageAction.onClicked.addListener(() => {
                   delete runningTasks[tab.id];
                   return qcb();
                 }
-
-                // let headers = new Headers();
-                // headers.append('Content-Type', 'application/json');
-                // headers.append('Content-Length', response.toString());
-
-                // let options = {
-                //   method: 'POST',
-                //   headers,
-                //   mode: 'cors',
-                // };
-                // let req = new Req(response, options);
 
                 fetch('http://localhost:3000/newegg/usa/create', {
                   method: 'POST',
@@ -73,16 +62,14 @@ chrome.pageAction.onClicked.addListener(() => {
                       chrome.tabs.remove(tab.id);
                       // return;
                     }
-
-                    qcb();
                     delete runningTasks[tab.id];
+                    setTimeout(qcb, 1000);
                   });
               });
             }
           });
-
-        }, 4);
-        q.push(urls.slice(0,10));
+        }, 3);
+        q.push(urls);
         q.drain = function () {
           taskStatus = '';
           runningTasks = {};

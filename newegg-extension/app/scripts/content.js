@@ -58,6 +58,15 @@ function parseNeweggHTML() {
       data[currentSpec] = info.replace(/<br>/g, '\n');
     }
   }
+
+  // get the images
+  let imageElems = document.querySelectorAll('#synopsis > div.grpAside > div > ul > li > a > img');
+  data.images = [];
+  for (let i = 0; i < imageElems.length; i++) {
+    if (imageElems[i].src) {
+      data.images.push(imageElems[i].src);
+    }
+  }
   data.url = window.location.href;
   console.log('before parseUrl');
   let params = parseUrl(data.url);

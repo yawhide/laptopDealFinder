@@ -5,6 +5,7 @@ var express = require('express'),
 const _ = require('lodash');
 const cronConfig = require('../../cron/config.js');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 
 module.exports = function (app) {
@@ -14,7 +15,35 @@ module.exports = function (app) {
 router.get('/usa/all', function (req, res, next) {
   Newegg.find(function (err, products) {
     if (err) return next(err);
-    res.json(products);
+    // res.json(products);
+
+    // aggregate into categories by graphics card?
+    let graphicsCardGroup = {};
+    products.forEach(product => {
+      if (!graphicsCardGroup[product['Graphics Card']]) graphicsCardGroup[product['Graphics Card']] = [];
+      graphicsCardGroup[product['Graphics Card']].push(product);
+    });
+    let sortedByPrice = _.clone(products).sort((a,b) => {
+      let left = a.priceHistory[a.priceHistory.length - 1].currentPrice || '1000000';
+      let right = b.priceHistory[b.priceHistory.length - 1].currentPrice || '1000000';
+      left = left.replace(/,/g, '').replace(/\$/g, '').replace(/\./g, '');
+      right = right.replace(/,/g, '').replace(/\$/g, '').replace(/\./g, '');
+      console.log(left, right)
+      return parseInt(left) - parseInt(right);
+    });
+    // console.log(JSON.stringify(sortedByPrice.map(a=>a.priceHistory[a.priceHistory.length - 1].currentPrice), 3, null))
+    // Newegg.find(
+    // { 'priceHistory.currentPrice': '' },
+    // { 'priceHistory.currentPrice': { '$slice': -1 } },
+    // (err, results) => {
+    //   console.log(err, results.map(r=>r.get('url')));
+    // });
+    res.render('newegg-usa-multi', {
+      title: 'Newegg USA',
+      products,
+      sortedByPrice,
+      graphicsCardGroup,
+    });
   });
 });
 
@@ -71,7 +100,15 @@ router.get('/usa/urllist', function (req, res, next) {
     }
     let urls = contents.split('\n');
     if (urls[urls.length - 1] === '') urls.splice(urls.length - 1);
-    res.json(urls);
+    Newegg.find((err, products) => {
+      if (err) {
+        console.error('Failed to get all except urls.', err);
+        return next(err);
+      }
+      let processedUrls = products.map(product=>product.get('url')).filter(i=>i);
+      let results = _.difference(urls, processedUrls);
+      res.json(results);
+    });
   });
 });
 

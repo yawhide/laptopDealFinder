@@ -1,0 +1,40 @@
+{% extends 'layout.nunjucks' %}
+
+{% block content %}
+  <h3>{{title}}</h3>
+
+  <table class="u-full-width">
+    <thead>
+      <tr>
+        <th>Price</th>
+        <th>Model</th>
+        <th>CPU</th>
+        <th>Graphics</th>
+        <th>RAM</th>
+        <th>HDD</th>
+        <th>SDD</th>
+        <th>Display</th>
+        <th>Battery</th>
+        <th>Weight</th>
+        <th>Thickness</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for spec in sortedByPrice %}
+        <tr>
+          <td>{{spec.priceHistory[spec.priceHistory.length - 1].currentPrice}}</td>
+          <td><a href="{{spec.get('url')}}" target="_blank">{{spec.get('Brand')}} {{spec.get('Model')}}</a></td>
+          <td>{{spec.get('CPU')}}</td>
+          <td>{{spec.get('Graphics Card')}} {{spec.get('Video Memory')}}</td>
+          <td>{{spec.get('Memory Spec')}} {{spec.get('Memory Speed')}}</td>
+          <td>{{spec.get('HDD')}} {{spec.get('HDD RPM')}}</td>
+          <td>{{spec.get('SDD')}}</td>
+          <td>{{spec.get('Screen Size')}} {{spec.get('Resolution')}} {{spec.get('Display Type')}}</td>
+          <td>{{spec.get('Battery')}}</td>
+          <td>{{spec.get('Weight')}}</td>
+          <td>{{spec.get('Dimensions (W x D x H)')}}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}
