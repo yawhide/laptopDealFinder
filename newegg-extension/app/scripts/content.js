@@ -25,7 +25,7 @@ function parseUrl (url) {
 }
 
 function parseNeweggHTML() {
-  let data = {};
+  let data = { priceInfo: {} };
   let selectors = {
     // can take strings or functions with cherrio'ed html passed in
     'preSalePrice': '#landingpage-price > div > div > ul > li.price-was',
@@ -34,8 +34,10 @@ function parseNeweggHTML() {
     'noteOnPrice': '#landingpage-price > div > div > ul > li.price-note',
     'hasPriceMatch': function () {
       return !!document.querySelector('#landingpage-iron-egg > div > div.price-guarantee');
-    }
+    },
+    'specialPrice': '#landingpage-price > div > div > ul > li.price-map',
   };
+  debugger;
   Object.keys(selectors).forEach(info => {
     if (typeof selectors[info] === 'function') {
       data[info] = selectors[info]();
@@ -44,7 +46,7 @@ function parseNeweggHTML() {
     // console.log($)
     // console.log($('#landingpage-price > div > div > ul > li.price-current').text())
     let text = document.querySelector(selectors[info]).innerText;
-    data[info] = text === null || text === undefined ? '' : text;
+    data.priceInfo[info] = text === null || text === undefined ? '' : text;
   });
 
   // get the spec list and programmatically iterate through and get each spec

@@ -1,0 +1,93 @@
+{% extends 'layout.nunjucks' %}
+
+{% block content %}
+  <h3>{{title}}</h3>
+
+  <table class="u-full-width">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Price</th>
+        <th>Model</th>
+        <th>CPU</th>
+        <th>Graphics</th>
+        <th>RAM</th>
+        <th>HDD</th>
+        <th>SDD</th>
+        <th>Display</th>
+        <th>Battery</th>
+        <th>Weight</th>
+        <th>Thickness</th>
+      </tr>
+    </thead>
+    {% for key, values in graphicsCardGroup %}
+      <tbody>
+        {% for spec in values %}
+          <tr>
+            <td><img src='{{spec.images[0]}}'>
+            <td hidden='true'>{{spec.neweggID}}</td>
+
+            <td>
+              {% if spec.isOutOfStock %}
+                {{spec.isOutOfStock}}
+              {% else %}
+                {{spec.getPrice}}
+              {% endif %}
+            </td>
+
+            <td>
+              <a href='{{spec.get('url')}}' target='_blank'>{{spec.get('Brand')}} {{ spec.get('Series')}}<br>{{spec.get('Model')}}</a>
+            </td>
+            <td>
+              {% if spec.get('CPU') %}
+                {{spec.get('CPU')}}
+              {% else %}
+                {{spec.get('CPU Type')}} {{spec.get('CPU Speed')}}
+              {% endif %}
+            </td>
+
+            <td>
+              {% if spec.get('Graphics Card') %}
+                {{spec.get('Graphics Card')}} {{spec.get('Video Memory')}}
+              {% else %}
+                {{spec.get('GPU/VPU')}}
+              {% endif %}
+            </td>
+
+            <td>
+              {% if spec.get('Memory Spec') or spec.get('Memory Speed') %}
+                {{spec.get('Memory Spec')}} {{spec.get('Memory Speed')}}
+              {% else %}
+                {{spec.get('Memory')}}
+              {% endif %}
+            </td>
+
+            <td>
+              {% if spec.get('HDD') or spec.get('HDD RPM') %}
+                {{spec.get('HDD')}} {{spec.get('HDD RPM')}}
+              {% elseif spec.get('Storage') %}
+                {{spec.get('Storage')}}
+              {% else %}
+                {{spec.get('HDD Spec')}}
+              {% endif %}
+            </td>
+
+            <td>{{spec.get('SSD')}}</td>
+
+            <td>
+              {% if spec.get('Screen Size') or spec.get('Resolution') or spec.get('Display Type') %}
+                {{spec.get('Screen Size')}} {{spec.get('Resolution')}} {{spec.get('Display Type')}}
+              {% else %}
+                {{spec.get('Screen')}}
+              {% endif %}
+            </td>
+
+            <td>{{spec.get('Battery')}}</td>
+            <td>{{spec.get('Weight')}}</td>
+            <td>{{spec.get('Dimensions (W x D x H)')}}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    {% endfor %}
+  </table>
+{% endblock %}
