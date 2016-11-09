@@ -24,7 +24,7 @@ chrome.pageAction.onClicked.addListener(() => {
     taskStatus = 'stopping';
     return;
   }
-  fetch('http://localhost:3000/newegg/usa/urllist')
+  fetch('http://localhost:5000/newegg/usa/urllist')
     .then((response) => {
       return response.json().then((urls) => {
         console.log(`scraping ${urls.length} urls`);
@@ -49,7 +49,7 @@ chrome.pageAction.onClicked.addListener(() => {
                   return qcb();
                 }
 
-                fetch('http://localhost:3000/newegg/usa/create', {
+                fetch('http://localhost:5000/newegg/usa/create', {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json'
@@ -69,7 +69,7 @@ chrome.pageAction.onClicked.addListener(() => {
             }
           });
         }, 3);
-        q.push(urls);
+        q.push(urls.slice(0,1));
         q.drain = function () {
           taskStatus = '';
           runningTasks = {};

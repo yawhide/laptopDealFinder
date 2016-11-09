@@ -37,7 +37,6 @@ function parseNeweggHTML() {
     },
     'specialPrice': '#landingpage-price > div > div > ul > li.price-map',
   };
-  debugger;
   Object.keys(selectors).forEach(info => {
     if (typeof selectors[info] === 'function') {
       data[info] = selectors[info]();

@@ -48,9 +48,9 @@ getUriFromNeweggUsa(1, (err, uris) => {
       getUriFromNeweggUsa(i, mapCB);
     }, (err, restOfUris) => {
       let allUris = uris.concat(restOfUris.reduce((a,b)=>a.concat(b)));
-      console.log('done')
       // console.log(JSON.stringify(allUris, null, 3));
       fs.writeFile(config.newegg.usa.gamingLaptop.savedFilePath, allUris.join('\n'));
+      console.log('done, wrote', allUris.length, 'urls');
     });
   }
 });
