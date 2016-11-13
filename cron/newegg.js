@@ -42,6 +42,7 @@ function getUriFromNeweggUsa(pageNumber, cb) {
   });
 }
 
+console.time('creating url list');
 getUriFromNeweggUsa(1, (err, uris) => {
   if (neweggPagesArray.length) {
     async.mapLimit(neweggPagesArray.slice(1), 5, (i, mapCB) => {
@@ -49,8 +50,9 @@ getUriFromNeweggUsa(1, (err, uris) => {
     }, (err, restOfUris) => {
       let allUris = uris.concat(restOfUris.reduce((a,b)=>a.concat(b)));
       // console.log(JSON.stringify(allUris, null, 3));
-      fs.writeFile(config.newegg.usa.gamingLaptop.savedFilePath, allUris.join('\n'));
+      fs.writeFileSync(config.newegg.usa.gamingLaptop.savedFilePath, allUris.join('\n'));
       console.log('done, wrote', allUris.length, 'urls');
+      console.timeEnd('creating url list');
     });
   }
 });

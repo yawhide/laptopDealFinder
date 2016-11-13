@@ -24,6 +24,7 @@ module.exports = {
     }
   },
   nightmare: {
+    numWorkers: 1,
     settings: {
       executionTimeout: 2000,
       show: false,
