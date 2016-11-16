@@ -173,10 +173,10 @@ function readSavedUrls(cb) {
             let data = { priceInfo: {} };
             let selectors = {
               // can take strings or functions with cherrio'ed html passed in
-              'preSalePrice': '#landingpage-price > div > div > ul > li.price-was',
-              'currentPrice': '#landingpage-price > div > div > ul > li.price-current',
+              'preSalePrice': '#landingpage-price > div > div > ul > li.price-was', // very new product
+              'price': '#landingpage-price > div > div > ul > li.price-current',
               'savingsOnPrice': '#landingpage-price > div > div > ul > li.price-save',
-              'noteOnPrice': '#landingpage-price > div > div > ul > li.price-note',
+              'noteOnPrice': '#landingpage-price > div > div > ul > li.price-note', // says if its out of stock
               'hasPriceMatch': function () {
                 return !!document.querySelector('#landingpage-iron-egg > div > div.price-guarantee');
               },
@@ -235,7 +235,7 @@ function readSavedUrls(cb) {
           }, (err) => {
             console.error('Failed to get data from uri:', uri, err);
             eachLimitCB();
-          })
+          });
       }, (err) => {
         nightmare.end().then().catch((err) => { console.error(err); });
         eachCB();

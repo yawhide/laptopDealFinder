@@ -56,3 +56,18 @@ getUriFromNeweggUsa(1, (err, uris) => {
     });
   }
 });
+
+// bestbuy
+// `http://www.bestbuy.com/site/searchpage.jsp?cp=${pageNumber}&searchType=search&_dyncharset=UTF-8&ks=960&sc=Global&list=y&usc=All%20Categories&type=page&id=pcat17071&iht=n&seeAll=&browsedCategory=pcmcat287600050003&st=pcmcat287600050003_categoryid%24abcat0502000&qp=collection_facet%3DSAAS~Collection~Gaming%20Series%5Ecomputergraphicstypesv_facet%3DGraphics%20Type~Discrete`
+
+// b&h
+// `https://www.bhphotovideo.com/c/buy/gaming-notebooks/ipp/100/ci/24610/pn/${pageNumber}/N/3670569600/view/GALLERY`
+
+// superbiiz
+// `http://www.superbiiz.com/query.php?s=%20&categry=57&stock=all&dp=${pageNumber}&nl=50&stock=all`
+
+// ncix usa
+// http://www.ncixus.com/products/?minorcatid=1323
+
+// adorama
+// `http://www.adorama.com/l/Computers/Notebooks-and-Accessories/Notebooks?Page=${pageNumber}`
