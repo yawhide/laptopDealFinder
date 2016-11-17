@@ -48,3 +48,5 @@ newegg-extension/.sass-cache
 newegg-extension/app/bower_components
 newegg-extension/test/bower_components
 newegg-extension/package
+
+cron/*.txt

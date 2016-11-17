@@ -1,9 +1,10 @@
 const _ = require('lodash');
 const async = require('async');
-const cheerio = require('cheerio');
+const config = require('../config/config');
 const constants = require('../config/constants');
 const fs = require('fs');
 const needle = require('needle');
+const Nightmare = require('nightmare');
 const path = require('path');
 const querystring = require('querystring');
 const util = require('util');
@@ -12,68 +13,72 @@ const nightmareLib = require('../library/nightmare');
 
 const nightmareLaptopPageWaitSelector = '#landingpage-price > div > div > ul > li.price-current';
 
-function getUriFromNeweggUsa(pageNumber, cb) {
-  let neweggPagesArray = [];
-  let url = util.format(constants.newegg.usa.gamingLaptop.paginatedUrl, pageNumber);
-  needle.get(url, (err, resp) => {
-    if (!err && resp.statusCode === 200) {
-      let $ = cheerio.load(resp.body);
+const numberOfLaptopsSelector = '#content > table > tbody > tr > td > table > tbody > tr > td:nth-child(2) > table > tbody > tr:nth-child(2) > td > div > form > table:nth-child(8) > tbody > tr > td > table:nth-child(2) > tbody > tr:nth-child(2) > td > table > tbody > tr:nth-child(2) > td:nth-child(1)';
 
-      if (pageNumber === 1) {
-        let paginationElem = $('#bodyArea > section > div > div > div.row-body > div > div > div.row.has-side-banner > div.row-body > div.row-body-inner > div.list-wrap > div:nth-child(1) > div.list-tool-pagination > span:nth-child(2) > strong');
-        if (paginationElem && paginationElem.html()) {
-          // console.log(paginationElem, paginationElem.html())
-          let splitOnPagesText = paginationElem.html().split('/');
-          neweggPagesArray = splitOnPagesText.length > 0 ? Array(parseInt(splitOnPagesText[1])).fill().map((x,i)=>i+2) : null;
-          // console.log(neweggPagesArray, parseInt(splitOnPagesText[1]))
-        }
-      }
+const anchorTagOnLaptopListSelector = '#content > table > tbody > tr > td > table > tbody > tr > td:nth-child(2) > table > tbody > tr:nth-child(2) > td > div > form > table:nth-child(8) > tbody > tr > td > table:nth-child(3) > tbody > tr > td:nth-child(2) > a';
 
-      let elements = $('#bodyArea > section > div > div > div.row-body > div > div > div.row.has-side-banner > div.row-body > div.row-body-inner > div.list-wrap > div:nth-child(4) > div > a');
-      let uris = [];
-      Object.keys(elements).forEach(key => {
-        let url = _.get(elements, [key, 'attribs', 'href']);
-        if (url) {
-          uris.push(url);
-        }
-      });
-      cb(null, uris, neweggPagesArray);
-    } else {
-      console.error(`failed to get page: ${pageNumber}, url: ${url}.`, err);
-      cb(err);
-    }
-  });
-}
+// superbiiz
+// `http://www.superbiiz.com/query.php?s=%20&categry=57&stock=all&dp=${pageNumber}&nl=50&stock=all`
+
+const serviceName = 'superbiiz';
 
 exports.getGamingLaptopUris = function (cb) {
-  console.time('created gaming laptop url list');
-  getUriFromNeweggUsa(1, (err, uris, neweggPagesArray) => {
-    if (neweggPagesArray.length) {
-      async.mapLimit(neweggPagesArray.slice(1), 5, (pageNumber, mapCB) => {
-        getUriFromNeweggUsa(pageNumber, mapCB);
-      }, (err, restOfUris) => {
-        let allUris = _.uniq(uris.concat(restOfUris.reduce((a,b)=>a.concat(b))));
-        // console.log(JSON.stringify(allUris, null, 3));
-        fs.writeFileSync(`cron/${constants.newegg.usa.gamingLaptop.savedFilePath}`, allUris.join('\n'));
-        console.log('done, wrote', allUris.length, 'urls');
-        console.timeEnd('created gaming laptop url list');
-        cb(null, allUris);
+  console.time('created gaming laptop url list for', serviceName);
+  let uri = util.format(constants[serviceName].gamingLaptop.paginatedUrl, 1);
+  let uris;
+  let numLaptops = 0;
+
+  let nightmare = new Nightmare(constants.nightmare.settings);
+  nightmare
+    .useragent(constants.nightmare.useragent)
+    .viewport(400,150)
+    .goto(uri)
+    .wait(numberOfLaptopsSelector)
+    .evaluate(function (selector) {
+      let elems = document.querySelectorAll(selector);
+      let urls = [];
+      for(let i = 0; i < elems.length; i++) {
+        urls.push(elems[i].href);
+      }
+      let totalNumberOfLaptops = document.querySelector('#content > table > tbody > tr > td > table > tbody > tr > td:nth-child(2) > table > tbody > tr:nth-child(2) > td > div > form > table:nth-child(8) > tbody > tr > td > table:nth-child(2) > tbody > tr:nth-child(2) > td > table > tbody > tr:nth-child(2) > td:nth-child(1)').innerText;
+      return { urls, numLaptops: Number(totalNumberOfLaptops.replace(/\D/g, '')) };
+    }, anchorTagOnLaptopListSelector)
+    .then(function (info) {
+      uris = info.urls;
+      numLaptops = info.numLaptops;
+      console.log(numLaptops, 'laptops available to scrape');
+      let pageNumbersArr = Array(Math.ceil(numLaptops/50) - 1).fill().map((i,j)=>j+1);
+      console.log('scraping page numbers:', pageNumbersArr);
+      async.eachSeries(pageNumbersArr, (pageNumber, eachSeriesCB) => {
+
+        let currUri = util.format(constants[serviceName].gamingLaptop.paginatedUrl, pageNumber);
+        nightmare
+          .useragent(constants.nightmare.useragent)
+          .viewport(400,150)
+          .goto(currUri)
+          .wait(numberOfLaptopsSelector)
+          .evaluate(function (selector) {
+            let elems = document.querySelectorAll(selector);
+            let urls = [];
+            for(let i = 0; i < elems.length; i++) {
+              urls.push(elems[i].href);
+            }
+            return urls;
+          }, anchorTagOnLaptopListSelector)
+          .then(function (info) {
+            uris = uris.concat(info);
+            eachSeriesCB();
+          });
+
+      }, () => {
+        uris = _.uniq(uris);
+        fs.writeFileSync(`cron/${constants[serviceName].gamingLaptop.savedFilePath}`, uris.join('\n'));
+        console.log('done, wrote', uris.length, 'urls');
+        console.timeEnd('created gaming laptop url list for', serviceName);
+        cb(null, uris);
       });
-    } else {
-      cb('failed');
-    }
-  });
+    });
 }
-
-
-// bestbuy
-// `http://www.bestbuy.com/site/searchpage.jsp?cp=${pageNumber}&searchType=search&_dyncharset=UTF-8&ks=960&sc=Global&list=y&usc=All%20Categories&type=page&id=pcat17071&iht=n&seeAll=&browsedCategory=pcmcat287600050003&st=pcmcat287600050003_categoryid%24abcat0502000&qp=collection_facet%3DSAAS~Collection~Gaming%20Series%5Ecomputergraphicstypesv_facet%3DGraphics%20Type~Discrete`
-
-// b&h
-// `https://www.bhphotovideo.com/c/buy/gaming-notebooks/ipp/100/ci/24610/pn/${pageNumber}/N/3670569600/view/GALLERY`
-
-// adorama
-// `http://www.adorama.com/l/Computers/Notebooks-and-Accessories/Notebooks?Page=${pageNumber}`
 
 function nightmareLaptopPageFn(nightmare, uri, cb) {
   nightmare

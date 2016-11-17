@@ -23,6 +23,13 @@ module.exports = {
       }
     }
   },
+  superbiiz: {
+    gamingLaptop: {
+      url: 'http://www.superbiiz.com/query.php?s=%20&categry=57&stock=all&dp=%d&nl=50&stock=all',
+      paginatedUrl: 'http://www.superbiiz.com/query.php?s=%20&categry=57&stock=all&dp=%d&nl=50&stock=all',
+      savedFilePath: 'superbiizGamingLaptopUris.txt',
+    }
+  },
   nightmare: {
     numWorkers: 1,
     settings: {

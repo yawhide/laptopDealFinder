@@ -7,18 +7,24 @@ const Items = mongoose.model('Items');
 const os = require('os');
 const path = require('path');
 
+const serviceMapping = require('../../library/scrape-services');
+
 module.exports = function (app) {
   app.use('/scrape', router);
 };
 
+router.get('/create-url-list/:service', function (req, res, next) {
+  let scraper = serviceMapping[req.params.service];
+  console.log(req.params.service)
+  if (!scraper) return res.sendStatus(404);
+  scraper.getGamingLaptopUris((err, uris) => {
+    res.json(uris);
+  });
+});
+
 router.get('/start/:service', function (req, res, next) {
-  let scraper;
-  console.log(path.resolve(__dirname + `/../../scrape-services/${req.params.service}`))
-  try {
-    scraper = require(path.resolve(__dirname + `/../../scrape-services/${req.params.service}`));
-  } catch(e) {
-    return res.sendStatus(404);
-  }
+  let scraper = serviceMapping[req.params.service];
+  if (!scraper) return res.sendStatus(404);
   scraper.scrapeWithFileUrlList(err => {
     res.sendStatus(200);
   });
