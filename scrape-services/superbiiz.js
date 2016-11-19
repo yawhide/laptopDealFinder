@@ -3,10 +3,7 @@ const async = require('async');
 const config = require('../config/config');
 const constants = require('../config/constants');
 const fs = require('fs');
-const needle = require('needle');
 const Nightmare = require('nightmare');
-const path = require('path');
-const querystring = require('querystring');
 const util = require('util');
 
 const nightmareLib = require('../library/nightmare');
@@ -22,7 +19,7 @@ const anchorTagOnLaptopListSelector = '#content > table > tbody > tr > td > tabl
 
 const serviceName = 'superbiiz';
 
-exports.getGamingLaptopUris = function (cb) {
+exports.getGamingLaptopUris = function(cb) {
   console.time('created gaming laptop url list for', serviceName);
   let uri = util.format(constants[serviceName].gamingLaptop.paginatedUrl, 1);
   let uris;
@@ -31,45 +28,43 @@ exports.getGamingLaptopUris = function (cb) {
   let nightmare = new Nightmare(constants.nightmare.settings);
   nightmare
     .useragent(constants.nightmare.useragent)
-    .viewport(400,150)
+    .viewport(400, 150)
     .goto(uri)
     .wait(numberOfLaptopsSelector)
-    .evaluate(function (selector) {
+    .evaluate(function(selector) {
       let elems = document.querySelectorAll(selector);
       let urls = [];
-      for(let i = 0; i < elems.length; i++) {
+      for (let i = 0; i < elems.length; i++) {
         urls.push(elems[i].href);
       }
       let totalNumberOfLaptops = document.querySelector('#content > table > tbody > tr > td > table > tbody > tr > td:nth-child(2) > table > tbody > tr:nth-child(2) > td > div > form > table:nth-child(8) > tbody > tr > td > table:nth-child(2) > tbody > tr:nth-child(2) > td > table > tbody > tr:nth-child(2) > td:nth-child(1)').innerText;
       return { urls, numLaptops: Number(totalNumberOfLaptops.replace(/\D/g, '')) };
     }, anchorTagOnLaptopListSelector)
-    .then(function (info) {
+    .then(function(info) {
       uris = info.urls;
       numLaptops = info.numLaptops;
       console.log(numLaptops, 'laptops available to scrape');
-      let pageNumbersArr = Array(Math.ceil(numLaptops/50) - 1).fill().map((i,j)=>j+1);
+      let pageNumbersArr = Array(Math.ceil(numLaptops / 50) - 1).fill().map((i, j) => j + 1);
       console.log('scraping page numbers:', pageNumbersArr);
       async.eachSeries(pageNumbersArr, (pageNumber, eachSeriesCB) => {
-
         let currUri = util.format(constants[serviceName].gamingLaptop.paginatedUrl, pageNumber);
         nightmare
           .useragent(constants.nightmare.useragent)
-          .viewport(400,150)
+          .viewport(400, 150)
           .goto(currUri)
           .wait(numberOfLaptopsSelector)
-          .evaluate(function (selector) {
+          .evaluate(function(selector) {
             let elems = document.querySelectorAll(selector);
             let urls = [];
-            for(let i = 0; i < elems.length; i++) {
+            for (let i = 0; i < elems.length; i++) {
               urls.push(elems[i].href);
             }
             return urls;
           }, anchorTagOnLaptopListSelector)
-          .then(function (info) {
-            uris = uris.concat(info);
+          .then(function(result) {
+            uris = uris.concat(result);
             eachSeriesCB();
           });
-
       }, () => {
         uris = _.uniq(uris);
         fs.writeFileSync(`cron/${constants[serviceName].gamingLaptop.savedFilePath}`, uris.join('\n'));
@@ -78,16 +73,16 @@ exports.getGamingLaptopUris = function (cb) {
         cb(null, uris);
       });
     });
-}
+};
 
 function nightmareLaptopPageFn(nightmare, uri, cb) {
   nightmare
     .useragent(constants.nightmare.useragent)
-    .viewport(400,150)
+    .viewport(400, 150)
     .goto(uri)
     .wait(nightmareLaptopPageWaitSelector)
     .evaluate(function() {
-      function parseUrl (uri) {
+      function parseUrl(uri) {
         let query = window.location.search;
         let regex = /[?&;](.+?)=([^&;]+)/g;
         let match;
@@ -109,10 +104,10 @@ function nightmareLaptopPageFn(nightmare, uri, cb) {
           id: '',
           images: [],
           priceHistory: [{}],
-          url: '',
+          url: ''
         },
         sourceName: 'newegg',
-        specifications: {},
+        specifications: {}
       };
       let selectors = {
         // can take strings or functions with cherrio'ed html passed in
@@ -120,10 +115,10 @@ function nightmareLaptopPageFn(nightmare, uri, cb) {
         'price': '#landingpage-price > div > div > ul > li.price-current',
         'savingsOnPrice': '#landingpage-price > div > div > ul > li.price-save',
         'noteOnPrice': '#landingpage-price > div > div > ul > li.price-note', // says if its out of stock
-        'hasPriceMatch': function () {
-          return !!document.querySelector('#landingpage-iron-egg > div > div.price-guarantee');
+        'hasPriceMatch': function() {
+          return Boolean(document.querySelector('#landingpage-iron-egg > div > div.price-guarantee'));
         },
-        'specialPrice': '#landingpage-price > div > div > ul > li.price-map',
+        'specialPrice': '#landingpage-price > div > div > ul > li.price-map'
       };
       Object.keys(selectors).forEach(info => {
         if (typeof selectors[info] === 'function') {
@@ -163,14 +158,14 @@ function nightmareLaptopPageFn(nightmare, uri, cb) {
       if (itemId) {
         data.sourceInfo.id = itemId;
       } else {
-        console.error("cannot get neweggID..." + uri);
+        console.error('cannot get neweggID...' + uri);
         return;
       }
       data.model = data.specifications['Model'];
       return data;
     })
     .then(info => {
-      console.log(JSON.stringify(info, null, 2))
+      console.log(JSON.stringify(info, null, 2));
       cb(null, info);
     }, (err) => {
       console.error('Failed to get data from uri:', uri, err);
@@ -178,7 +173,7 @@ function nightmareLaptopPageFn(nightmare, uri, cb) {
     });
 }
 
-exports.scrape = function (uriList, cb) {
+exports.scrape = function(uriList, cb) {
   console.time('scrape');
   nightmareLib.runNightmare(nightmareLaptopPageFn, uriList, (err) => {
     if (err) {
@@ -187,9 +182,9 @@ exports.scrape = function (uriList, cb) {
     console.timeEnd('scrape');
     cb();
   });
-}
+};
 
-exports.scrapeWithFileUrlList = function (cb) {
+exports.scrapeWithFileUrlList = function(cb) {
   fs.readFile(`cron/${constants.newegg.usa.gamingLaptop.savedFilePath}`, 'utf8', (err, data) => {
     if (err) {
       console.error('Failed to read file at path:', constants.newegg.usa.gamingLaptop.savedFilePath, err);
@@ -198,4 +193,4 @@ exports.scrapeWithFileUrlList = function (cb) {
     let uris = data.split('\n');
     exports.scrape(uris, cb);
   });
-}
+};
