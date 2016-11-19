@@ -15,3 +15,7 @@ td a {
 tbody tr td:nth-child(4) {
   cursor: pointer;
 }
+
+.hide {
+  display: none;
+}

@@ -1,9 +1,0 @@
-{% extends 'layout.nunjucks' %}
-
-{% block content %}
-  <ul>
-   {% for key, value in product %}
-      <li>{{ key }}: {{ value }}</li>
-   {% endfor %}
-  </ul>
-{% endblock %}

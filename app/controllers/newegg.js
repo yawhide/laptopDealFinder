@@ -63,7 +63,7 @@ router.get('/usa/all', function (req, res, next) {
   });
 });
 
-router.get('/usa/groupby/gpu', function (req, res, next) {
+router.get('/usa/groupby/gpu/all', function (req, res, next) {
   Newegg.find(function (err, products) {
     if (err) return next(err);
 
@@ -93,6 +93,38 @@ router.get('/usa/groupby/gpu', function (req, res, next) {
     });
   });
 });
+
+router.get('/usa/groupby/gpu/price', function (req, res, next) {
+  Newegg.find(function (err, products) {
+    if (err) return next(err);
+
+    products = filterBySpecList(products);
+    // go through products
+
+    // aggregate into categories by graphics card?
+    let graphicsCardGroup = _.groupBy(products, (product) => {
+      return extractGPU(product.get('Graphics Card') ? `${product.get('Graphics Card')} ${product.get('Video Memory')}` : product.get('GPU/VPU'));
+    });
+    console.log(Object.keys(graphicsCardGroup).map(i=>`${i}: ${graphicsCardGroup[i].length}`))
+
+    Object.keys(graphicsCardGroup).forEach(key=>{
+      graphicsCardGroup[key].sort((a,b) => {
+        let left = a.getPrice || '1000000';
+        let right = b.getPrice || '1000000';
+        left = left.replace(/\D/g,'');
+        right = right.replace(/\D/g,'');
+        return parseInt(left) - parseInt(right);
+      });
+    });
+
+    res.render('newegg-usa-group-by-gpu-price', {
+      title: 'Newegg USA',
+      products,
+      graphicsCardGroup,
+    });
+  });
+});
+
 
 router.post('/usa/create', function (req, res, next) {
   if (_.isEmpty(req.body)) {
@@ -177,8 +209,10 @@ let filterBySpecList = function (products) {
 let extractGPU = function (str) {
   let gpus = [
     '670',
+    '740m',
     '750m',
     '755m',
+    '760m',
     '765m',
     '770m',
     '780m',
@@ -205,23 +239,26 @@ let extractGPU = function (str) {
     'hd 8970m',
     'quadro m1000m',
     'quadro m600m',
+    'r7 m265dx',
     'r9 m290x',
     'r9 m375',
+    'r9 m380',
     '1060',
     '1070',
     '1080'
   ]
   let formattedStr = str.toLowerCase();
-  for (var i = gpus.length - 1; i >= 0; i--) {
+  for (var i = 0; i < gpus.length; i++) {
     if (formattedStr.indexOf(gpus[i]) > -1) return gpus[i];
   }
-  return '';
+  return 'uncategorized';
 }
 
 
 
 
-[
+
+let idunno = [
    "GeForce GTX 960M",
    "GeForce GTX 960M:2 GB",
    "NVIDIA GeForce GTX 960M",
@@ -466,4 +503,5 @@ let extractGPU = function (str) {
    "AMD Radeon R9 M375 2GB GDDR5:undefined",
    "NVIDIA GeForce GTX 980M:Dedicated 8 GB GDDR5",
    "*NVIDIA GeForce GTX 970M"
-]
+].map(i=>i.toLowerCase().replace(/nvidia/g, '').replace(/amd/g, '').replace(/geforce/g, '').replace(/\(r\)/g, '').replace(/gddr*5*/g, '').replace(/with/g, '').replace(/3d vision/g, '').replace(/radeon/g, '').trim())
+
