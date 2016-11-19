@@ -3,24 +3,25 @@
 {% block content %}
   <h3>{{title}}</h3>
 
-  <table class="u-full-width">
-    <thead>
-      <tr>
-        <th></th>
-        <th>Price</th>
-        <th>Model</th>
-        <th>CPU</th>
-        <th>Graphics</th>
-        <th>RAM</th>
-        <th>HDD</th>
-        <th>SDD</th>
-        <th>Display</th>
-        <th>Battery</th>
-        <th>Weight</th>
-        <th>Thickness</th>
-      </tr>
-    </thead>
-    {% for key, values in graphicsCardGroup %}
+  {% for key, values in graphicsCardGroup %}
+    <h4>{{key}}</h4>
+    <table class='u-full-width'>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Price</th>
+          <th>Model</th>
+          <th>CPU</th>
+          <th>Graphics</th>
+          <th>RAM</th>
+          <th>HDD</th>
+          <th>SDD</th>
+          <th>Display</th>
+          <th>Battery</th>
+          <th>Weight</th>
+          <th>Thickness</th>
+        </tr>
+      </thead>
       <tbody>
         {% for spec in values %}
           <tr>
@@ -88,6 +89,6 @@
           </tr>
         {% endfor %}
       </tbody>
-    {% endfor %}
-  </table>
+    </table>
+  {% endfor %}
 {% endblock %}

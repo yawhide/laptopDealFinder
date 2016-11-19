@@ -36,8 +36,17 @@ function parseNeweggHTML() {
       return !!document.querySelector('#landingpage-iron-egg > div > div.price-guarantee');
     },
     'specialPrice': '#landingpage-price > div > div > ul > li.price-map',
+    'notAvailable': function () {
+      let elem = document.querySelector('#version_promo > h2');
+      if (elem && elem.innerText.toLowerCase().indexOf('not available') > -1) return true
+      return false;
+    },
+    'outOfStock': function () {
+      let elem = document.querySelector('#landingpage-stock > strong > span');
+      if (elem && elem.innerText.toLowerCase().indexOf('out of stock') > -1) return true;
+      return false;
+    },
   };
-  debugger;
   Object.keys(selectors).forEach(info => {
     if (typeof selectors[info] === 'function') {
       data[info] = selectors[info]();
