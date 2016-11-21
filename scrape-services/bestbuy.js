@@ -1,6 +1,8 @@
+// bestbuy
+// `http://www.bestbuy.com/site/searchpage.jsp?cp=${pageNumber}&searchType=search&_dyncharset=UTF-8&ks=960&sc=Global&list=y&usc=All%20Categories&type=page&id=pcat17071&iht=n&seeAll=&browsedCategory=pcmcat287600050003&st=pcmcat287600050003_categoryid%24abcat0502000&qp=collection_facet%3DSAAS~Collection~Gaming%20Series%5Ecomputergraphicstypesv_facet%3DGraphics%20Type~Discrete`
+
 const _ = require('lodash');
 const async = require('async');
-const config = require('../config/config');
 const constants = require('../config/constants');
 const fs = require('fs');
 const Nightmare = require('nightmare');

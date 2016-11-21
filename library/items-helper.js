@@ -5,23 +5,22 @@ const config = require('../config/constants');
 const mongoose = require('mongoose');
 const Items = mongoose.model('Items');
 
-exports.createItem = function (data, cb) {
+exports.createItem = function(data, cb) {
   let payload = {
     model: data.model,
     sources: { [data.sourceName]: data.sourceInfo },
-    specifications: data.specifications,
-  }
+    specifications: data.specifications
+  };
   Items.create(payload, cb);
-}
+};
 
 exports.getByModel = function(model, cb) {
   console.info(model);
   Items.findOne({ model }, (err, doc) => {
     if (err) return cb(err);
-    console.info('found?:', !!doc);
     cb(null, doc);
   });
-}
+};
 
 function specDiff(origSpecs, specs) {
   //TODO
@@ -59,4 +58,4 @@ exports.writeToMongo = function(model, sourceName, data, cb) {
       cb();
     });
   });
-}
+};
