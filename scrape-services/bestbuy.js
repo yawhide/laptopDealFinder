@@ -12,14 +12,14 @@ const nightmareLib = require('../library/nightmare');
 
 const nightmareLaptopPageWaitSelector = '#content > table > tbody > tr > td > div > table:nth-child(7) > tbody > tr:nth-child(2) > td:nth-child(2) > table:nth-child(1) > tbody > tr:nth-child(2) > td > table > tbody > tr:nth-child(1) > td:nth-child(2) > table > tbody > tr:nth-child(2) > td > table > tbody > tr > td:nth-child(1) > div > div:nth-child(2) > div > table > tbody > tr > td:nth-child(2) > strong > font';
 
-const numberOfLaptopsSelector = '#content > table > tbody > tr > td > table > tbody > tr > td:nth-child(2) > table > tbody > tr:nth-child(2) > td > div > form > table:nth-child(8) > tbody > tr > td > table:nth-child(2) > tbody > tr:nth-child(2) > td > table > tbody > tr:nth-child(2) > td:nth-child(1)';
+const numberOfLaptopsSelector = '#main-results > div.results-tabs > ul > li > a > span';
 
-const anchorTagOnLaptopListSelector = '#content > table > tbody > tr > td > table > tbody > tr > td:nth-child(2) > table > tbody > tr:nth-child(2) > td > div > form > table:nth-child(8) > tbody > tr > td > table:nth-child(3) > tbody > tr > td:nth-child(2) > a';
+const anchorTagOnLaptopListSelector = '#main-results > div.list-items > div > div > div.col-xs-6.list-item-postcard-column > div > div.sku-title > h4 > a';
 
 // superbiiz
 // `http://www.superbiiz.com/query.php?s=%20&categry=57&stock=all&dp=${pageNumber}&nl=50&stock=all`
 
-const serviceName = 'superbiiz';
+const serviceName = 'bestbuy';
 
 exports.getGamingLaptopUris = function(cb) {
   console.time('created gaming laptop url list for', serviceName);
@@ -39,14 +39,14 @@ exports.getGamingLaptopUris = function(cb) {
       for (let i = 0; i < elems.length; i++) {
         urls.push(elems[i].href);
       }
-      let totalNumberOfLaptops = document.querySelector('#content > table > tbody > tr > td > table > tbody > tr > td:nth-child(2) > table > tbody > tr:nth-child(2) > td > div > form > table:nth-child(8) > tbody > tr > td > table:nth-child(2) > tbody > tr:nth-child(2) > td > table > tbody > tr:nth-child(2) > td:nth-child(1)').innerText;
+      let totalNumberOfLaptops = document.querySelector('#main-results > div.results-tabs > ul > li > a > span').innerText;
       return { urls, numLaptops: Number(totalNumberOfLaptops.replace(/\D/g, '')) };
     }, anchorTagOnLaptopListSelector)
     .then(function(info) {
       uris = info.urls;
       numLaptops = info.numLaptops;
       console.log(numLaptops, 'laptops available to scrape');
-      let pageNumbersArr = Array(Math.ceil(numLaptops / 50) - 1).fill().map((i, j) => j + 1);
+      let pageNumbersArr = Array(Math.ceil(numLaptops / 24)).fill().map((i, j) => j + 1).slice(1);
       console.log('scraping page numbers:', pageNumbersArr);
       async.eachSeries(pageNumbersArr, (pageNumber, eachSeriesCB) => {
         let currUri = util.format(constants[serviceName].gamingLaptop.paginatedUrl, pageNumber);
@@ -68,7 +68,7 @@ exports.getGamingLaptopUris = function(cb) {
             eachSeriesCB();
           });
       }, () => {
-        uris = _.uniq(uris.map(url => url + '&show=p'));
+        uris = _.uniq(uris);
         fs.writeFileSync(`cron/${constants[serviceName].gamingLaptop.savedFilePath}`, uris.join('\n'));
         console.log('done, wrote', uris.length, 'urls');
         console.timeEnd('created gaming laptop url list for', serviceName);

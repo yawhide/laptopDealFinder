@@ -31,7 +31,7 @@ module.exports = {
   },
   bestbuy: {
     gamingLaptop: {
-      paginatedUrl: 'http://www.bestbuy.com/site/searchpage.jsp?cp=%d&searchType=search&_dyncharset=UTF-8&list=y&usc=All%20Categories&type=page&id=pDSAAS~Collection~Gaming%20Series%5Ecomputergraphicstypesv_facet%3DGraphics%20Type~Discrete',
+      paginatedUrl: 'http://www.bestbuy.com/site/searchpage.jsp?cp=%d&ks=960&list=y&id=pcat17071&browsedCategory=pcmcat287600050003&st=pcmcat287600050003_categoryid%24abcat0502000&qp=collection_facet%3DSAAS~Collection~Gaming%20Series%5Ecomputergraphicstypesv_facet%3DGraphics%20Type~Discrete',
       savedFilePath: 'bestbuyGamingLaptopUris.txt'
     }
   },
