@@ -78,11 +78,11 @@ exports.getGamingLaptopUris = function(cb) {
 function nightmareLaptopPageFn(nightmare, uri, cb) {
   nightmare
     .useragent(constants.nightmare.useragent)
-    .viewport(1400, 1150)
+    .viewport(400, 150)
     .goto(uri)
     .wait(nightmareLaptopPageWaitSelector)
     .evaluate(function() {
-      function parseUrl(uri) {
+      function parseUrl() {
         let query = window.location.search;
         let regex = /[?&;](.+?)=([^&;]+)/g;
         let match;
@@ -166,7 +166,7 @@ function nightmareLaptopPageFn(nightmare, uri, cb) {
       }
       data.sourceInfo.url = window.location.href;
       // console.log('before parseUrl');
-      let params = parseUrl(data.url);
+      let params = parseUrl();
       // console.log('params', params)
       let itemId = params['name'];
       if (itemId) {

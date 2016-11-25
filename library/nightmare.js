@@ -21,6 +21,9 @@ exports.runNightmare = function(fn, uris, cb) {
           console.error(`Failed to run nightmare with uri: ${uri}.`, err);
           return asyncCB();
         }
+        if (info.error) {
+          return asyncCB();
+        }
         itemsHelper.writeToMongo(info.model, info.sourceName, info, (err) => {
           if (err) {
             console.error('Failed to write to mongo item.', err);

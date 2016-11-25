@@ -74,11 +74,11 @@ exports.getGamingLaptopUris = function (cb) {
 function nightmareLaptopPageFn(nightmare, uri, cb) {
   nightmare
     .useragent(constants.nightmare.useragent)
-    .viewport(400,150)
+    .viewport(400, 150)
     .goto(uri)
     .wait(nightmareLaptopPageWaitSelector)
     .evaluate(function() {
-      function parseUrl (uri) {
+      function parseUrl() {
         let query = window.location.search;
         let regex = /[?&;](.+?)=([^&;]+)/g;
         let match;
@@ -100,10 +100,10 @@ function nightmareLaptopPageFn(nightmare, uri, cb) {
           id: '',
           images: [],
           priceHistory: [{}],
-          url: '',
+          url: ''
         },
         sourceName: 'newegg',
-        specifications: {},
+        specifications: {}
       };
       let selectors = {
         // can take strings or functions with cherrio'ed html passed in
@@ -111,10 +111,10 @@ function nightmareLaptopPageFn(nightmare, uri, cb) {
         'price': '#landingpage-price > div > div > ul > li.price-current',
         'savingsOnPrice': '#landingpage-price > div > div > ul > li.price-save',
         'noteOnPrice': '#landingpage-price > div > div > ul > li.price-note', // says if its out of stock
-        'hasPriceMatch': function () {
+        'hasPriceMatch': function() {
           return !!document.querySelector('#landingpage-iron-egg > div > div.price-guarantee');
         },
-        'specialPrice': '#landingpage-price > div > div > ul > li.price-map',
+        'specialPrice': '#landingpage-price > div > div > ul > li.price-map'
       };
       Object.keys(selectors).forEach(info => {
         if (typeof selectors[info] === 'function') {
@@ -148,20 +148,20 @@ function nightmareLaptopPageFn(nightmare, uri, cb) {
       }
       data.sourceInfo.url = window.location.href;
       // console.log('before parseUrl');
-      let params = parseUrl(data.url);
+      let params = parseUrl();
       // console.log('params', params)
       let itemId = params['Item'];
       if (itemId) {
         data.sourceInfo.id = itemId;
       } else {
-        console.error("cannot get neweggID..." + uri);
+        console.error('cannot get neweggID...' + uri);
         return;
       }
       data.model = data.specifications['Model'];
       return data;
     })
     .then(info => {
-      console.log(JSON.stringify(info, null, 2))
+      console.log(JSON.stringify(info, null, 2));
       cb(null, info);
     }, (err) => {
       console.error('Failed to get data from uri:', uri, err);
@@ -169,7 +169,7 @@ function nightmareLaptopPageFn(nightmare, uri, cb) {
     });
 }
 
-exports.scrape = function (uriList, cb) {
+exports.scrape = function(uriList, cb) {
   console.time('scrape');
   nightmareLib.runNightmare(nightmareLaptopPageFn, uriList, (err) => {
     if (err) {
@@ -178,9 +178,9 @@ exports.scrape = function (uriList, cb) {
     console.timeEnd('scrape');
     cb();
   });
-}
+};
 
-exports.scrapeWithFileUrlList = function (cb) {
+exports.scrapeWithFileUrlList = function(cb) {
   fs.readFile(`cron/${constants.newegg.usa.gamingLaptop.savedFilePath}`, 'utf8', (err, data) => {
     if (err) {
       console.error('Failed to read file at path:', constants.newegg.usa.gamingLaptop.savedFilePath, err);
@@ -189,4 +189,4 @@ exports.scrapeWithFileUrlList = function (cb) {
     let uris = data.split('\n');
     exports.scrape(uris, cb);
   });
-}
+};

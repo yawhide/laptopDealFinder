@@ -10,14 +10,15 @@ const util = require('util');
 
 const nightmareLib = require('../library/nightmare');
 
-const nightmareLaptopPageWaitSelector = '#content > table > tbody > tr > td > div > table:nth-child(7) > tbody > tr:nth-child(2) > td:nth-child(2) > table:nth-child(1) > tbody > tr:nth-child(2) > td > table > tbody > tr:nth-child(1) > td:nth-child(2) > table > tbody > tr:nth-child(2) > td > table > tbody > tr > td:nth-child(1) > div > div:nth-child(2) > div > table > tbody > tr > td:nth-child(2) > strong > font';
+const nightmareLaptopPageWaitSelector = '#sku-title > h1';
 
 const numberOfLaptopsSelector = '#main-results > div.results-tabs > ul > li > a > span';
 
 const anchorTagOnLaptopListSelector = '#main-results > div.list-items > div > div > div.col-xs-6.list-item-postcard-column > div > div.sku-title > h4 > a';
 
-// superbiiz
-// `http://www.superbiiz.com/query.php?s=%20&categry=57&stock=all&dp=${pageNumber}&nl=50&stock=all`
+const specificationDiv = '#specifications-accordion > button';
+
+const specificationInfoSelector = '#specifications-accordion > div > div.specification-group.key-specs';
 
 const serviceName = 'bestbuy';
 
@@ -83,8 +84,10 @@ function nightmareLaptopPageFn(nightmare, uri, cb) {
     .viewport(1400, 1150)
     .goto(uri)
     .wait(nightmareLaptopPageWaitSelector)
+    .click(specificationDiv)
+    .wait(specificationInfoSelector)
     .evaluate(function() {
-      function parseUrl(uri) {
+      function parseUrl() {
         let query = window.location.search;
         let regex = /[?&;](.+?)=([^&;]+)/g;
         let match;
@@ -98,7 +101,9 @@ function nightmareLaptopPageFn(nightmare, uri, cb) {
         }
         return params;
       }
-      // return document.querySelector('#landingpage-price > div > div > ul > li.price-current').innerText;
+      let isAvailableElem = document.querySelector('#pdp-inactive-content > div.alert.alert-warning');
+      if (isAvailableElem && isAvailableElem.innerText === 'This item is no longer available.') return { error: 'no longer available' };
+
       let data = {
         model: '',
         sourceInfo: {
@@ -108,17 +113,17 @@ function nightmareLaptopPageFn(nightmare, uri, cb) {
           priceHistory: [{}],
           url: ''
         },
-        sourceName: 'superbiiz',
+        sourceName: 'bestbuy',
         specifications: {}
       };
       let selectors = {
         // can take strings or functions with cherrio'ed html passed in
-        'preSalePrice': '#content > table > tbody > tr > td > div > table:nth-child(7) > tbody > tr:nth-child(2) > td:nth-child(2) > table:nth-child(1) > tbody > tr:nth-child(2) > td > table > tbody > tr:nth-child(1) > td:nth-child(2) > table > tbody > tr:nth-child(2) > td > table > tbody > tr > td:nth-child(1) > div > div:nth-child(2) > div > table > tbody > tr:nth-child(1) > td:nth-child(2) > strong > font', // very new product
-        'price': '#content > table > tbody > tr > td > div > table:nth-child(7) > tbody > tr:nth-child(2) > td:nth-child(2) > table:nth-child(1) > tbody > tr:nth-child(2) > td > table > tbody > tr:nth-child(1) > td:nth-child(2) > table > tbody > tr:nth-child(2) > td > table > tbody > tr > td:nth-child(1) > div > div:nth-child(2) > div > table > tbody > tr > td:nth-child(2) > strong > font',
-        'savingsOnPrice': '#content > table > tbody > tr > td > div > table:nth-child(7) > tbody > tr:nth-child(2) > td:nth-child(2) > table:nth-child(1) > tbody > tr:nth-child(2) > td > table > tbody > tr:nth-child(1) > td:nth-child(2) > table > tbody > tr:nth-child(2) > td > table > tbody > tr > td:nth-child(1) > div > div:nth-child(2) > div > table > tbody > tr:nth-child(3) > td:nth-child(2) > font',
-        'noteOnPrice': '#content > table > tbody > tr > td > div > table:nth-child(7) > tbody > tr:nth-child(2) > td:nth-child(2) > table:nth-child(1) > tbody > tr:nth-child(2) > td > table > tbody > tr:nth-child(1) > td:nth-child(2) > table > tbody > tr:nth-child(2) > td > table > tbody > tr > td:nth-child(1) > div > div:nth-child(2) > div > b:nth-child(7) > font', // says if its out of stock
+        'preSalePrice': '#priceblock-wrapper-wrapper > div.price-block.priceblock-large > div.pucks-and-price.row > div.col-xs-7 > div.price-column > div.details > span.regular-price', // very new product
+        'price': '#priceblock-wrapper-wrapper > div.price-block.priceblock-large > div.pucks-and-price.row > div.col-xs-7 > div.price-column > div.item-price',
+        'savingsOnPrice': '#priceblock-wrapper-wrapper > div.price-block.priceblock-large > div.pucks-and-price.row > div.col-xs-7 > div.price-column > div.details > span.savings-amount',
+        'noteOnPrice': '#priceblock-wrapper-wrapper > div.price-block.priceblock-large > div.pucks-and-price.row > div.col-xs-12 > div > a > span', // says if its out of stock
         'hasPriceMatch': function() {
-          return false;
+          return Boolean(document.querySelector('#priceblock-wrapper-wrapper > div.price-block.priceblock-large > div.pucks-and-price.row > div.col-xs-12 > div.low-price-wrapper > a'));
         },
         'specialPrice': ''
       };
@@ -136,48 +141,43 @@ function nightmareLaptopPageFn(nightmare, uri, cb) {
       });
 
       // get the spec list and programmatically iterate through and get each spec
-      let specListSelectors = [
-        '#content > table > tbody > tr > td > div > table:nth-child(7) > tbody > tr:nth-child(2) > td:nth-child(2) > table:nth-child(1) > tbody > tr:nth-child(2) > td > table > tbody > tr:nth-child(3) > td > table > tbody > tr > td > table > tbody > tr:nth-child(2) > td > div > div > ul:nth-child(1) > ul > li',
-        '#content > table > tbody > tr > td > div > table:nth-child(7) > tbody > tr:nth-child(2) > td:nth-child(2) > table:nth-child(1) > tbody > tr:nth-child(2) > td > table > tbody > tr:nth-child(4) > td > table > tbody > tr > td > table > tbody > tr:nth-child(2) > td > div > div > ul:nth-child(1) > ul > li'
-      ];
-      for (let j = 0; j < specListSelectors.length; j++) {
-        let specList = document.querySelectorAll(specListSelectors[j]);
-        if (specList && specList.length) {
-          for (let i = 0; i < specList.length; i++) {
-            let elem = specList[i];
-            if (!elem || !elem.innerText) continue;
-            let specs = elem.innerText.split(':');
-            if (!specs.length) continue;
-            if (specs.length === 1) {
-              data.specifications[specs[0]] = '';
-              continue;
-            }
-            data.specifications[specs[0]] = specs[1].replace(/<br>/g, '\n').trim();
+      let specList = document.querySelectorAll('#specifications-accordion > div > div > ul > li');
+      if (specList) {
+        for (let i = 0; i < specList.length; i++) {
+          let elem = specList[i];
+          let specNameElem = elem.querySelector('div.specification-name');
+          if (specNameElem && specNameElem.querySelector('a')) {
+            specNameElem = specNameElem.querySelector('a');
           }
-          break;
+          let specValueElem = elem.querySelector('div.specification-value');
+          if (specNameElem && specValueElem) {
+            let specName = specNameElem.innerText;
+            let specValue = specValueElem.innerText;
+            data.specifications[specName.replace(/&nbsp;/g, '').replace(/\./g, '')] = specValue.replace(/<br>/g, '\n');
+          }
         }
       }
 
       // get the images
-      let imageElems = document.querySelectorAll('#content > table > tbody > tr > td > div > table:nth-child(7) > tbody > tr:nth-child(2) > td:nth-child(2) > table:nth-child(1) > tbody > tr:nth-child(2) > td > table > tbody > tr:nth-child(1) > td:nth-child(1) > table > tbody > tr:nth-child(2) > td > table > tbody > tr > td');
+      let imageElems = document.querySelectorAll('#carousel-main > div > div.indicators-row > div.indicators-column.images-indicators > div.indicators-outter > ol > li.thumbnail-image-wrapper > span > img');
       for (let i = 0; i < imageElems.length; i++) {
-        let elem = imageElems[i].querySelector('img');
+        let elem = imageElems[i];
         if (elem.src) {
           data.sourceInfo.images.push(elem.src);
         }
       }
       data.sourceInfo.url = window.location.href;
       // console.log('before parseUrl');
-      let params = parseUrl(data.url);
+      let params = parseUrl();
       // console.log('params', params)
-      let itemId = params['name'];
+      let itemId = params['skuId'];
       if (itemId) {
         data.sourceInfo.id = itemId;
       } else {
-        console.error('cannot get neweggID...' + uri);
+        console.error('cannot get bestbuy id...' + data.sourceInfo.url);
         return;
       }
-      data.model = data.specifications['Mfr Part Number'];
+      data.model = data.specifications['Model Number'];
       return data;
     })
     .then(info => {
@@ -201,7 +201,7 @@ exports.scrape = function(uriList, cb) {
 };
 
 exports.scrapeWithFileUrlList = function(cb) {
-  fs.readFile(`cron/${constants.superbiiz.gamingLaptop.savedFilePath}`, 'utf8', (err, data) => {
+  fs.readFile(`cron/${constants.bestbuy.gamingLaptop.savedFilePath}`, 'utf8', (err, data) => {
     if (err) {
       console.error('Failed to read file at path:', constants.newegg.usa.gamingLaptop.savedFilePath, err);
       return cb(err);
