@@ -35,6 +35,12 @@ module.exports = {
       savedFilePath: 'bestbuyGamingLaptopUris.txt'
     }
   },
+  bandh: {
+    gamingLaptop: {
+      paginatedUrl: 'https://www.bhphotovideo.com/c/buy/gaming-notebooks/ipp/100/ci/24610/pn/%d/N/3670569600/view/GALLERY',
+      savedFilePath: 'bandhGamingLaptopUris.txt'
+    }
+  },
   nightmare: {
     numWorkers: 3,
     settings: {
