@@ -12,7 +12,7 @@ const ItemsSchema = new Schema({
   //   priceHistory: [{}],
   //   url: String,
   // },
-  specifications: { type: Schema.Types.Mixed, required: true },
+  specifications: { type: Schema.Types.Mixed },
 }, { /*strict: false, */timestamps: true });
 
 ItemsSchema.virtual('getBestPrice').get(function() {
