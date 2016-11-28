@@ -1,164 +1,270 @@
 const _ = require('lodash');
 const async = require('async');
-const cheerio = require('cheerio');
 const config = require('./config');
 const fs = require('fs');
-const jsdom = require('jsdom');
-const needle = require('needle');
+const glob = require('glob');
+const mongoose = require('mongoose');
+const Nightmare = require('nightmare');
+const os = require('os');
 const path = require('path');
 const qs = require('qs');
+const startupConfig = require('../config/config');
 const url = require('url');
 const util = require('util');
 
-const splashDockerIP = fs.readFileSync('splash-docker-ip.txt', 'utf8').trim();
 const htmlDownloaderTimeout = 10;
 const htmlDownloaderWait = 10;
 const htmlDownloaderUrl = `http://localhost:8050/render.html?url=%s&timeout=${htmlDownloaderTimeout}&wait=${htmlDownloaderWait}`;
 
-
-// ================= helpers ================== //
-
-// returns err, html
-function getRequest(uri, cb) {
-  needle.get(uri, { open_timeout: 20000 }, (err, resp) => {
-    if (_.get(resp, 'statusCode') === 200) {
-      cb(null, resp.body);
-    } else if (err) {
-      cb({ error: err, message: `failed to make request using url: ${uri}` });
-    } else {
-      cb({ error: resp.statusCode, message: resp.body });
+function getRandomSubarray(arr, size) {
+    var shuffled = arr.slice(0), i = arr.length, min = i - size, temp, index;
+    while (i-- > min) {
+        index = Math.floor((i + 1) * Math.random());
+        temp = shuffled[index];
+        shuffled[index] = shuffled[i];
+        shuffled[i] = temp;
     }
-  });
+    return shuffled.slice(min);
 }
 
-// ================= test ===================== //
+function parseNeweggHTML() {
+  function parseUrl (url) {
+    let query = window.location.search;
+    let regex = /[?&;](.+?)=([^&;]+)/g;
+    let match;
 
-function readLocalSavedHTML() {
-  let folderPath = './html-test/neweggusa';
-  fs.readdir(folderPath, (err, dir) => {
-    if (err) {
-      console.error(`Failed to find local path ${foldPath}.`, err);
-      return;
-    }
-    dir.forEach(filePath => {
-      if (filePath.endsWith('.html')) {
-        console.log(filePath)
-        fs.readFile(path.resolve(folderPath, filePath), 'utf-8', (err, html) => {
-          if (err) {
-            console.error('Failed to read local html file.', err);
-            return;
-          }
-          let info = parseNeweggHTML(html);
-          // // info.url = uri;
+    let params = {};
 
-          // let urlObj = url.parse(uri);
-          // let splittedQueryString = urlObj.query.split('=');
-          // let itemIdIndex = splittedQueryString.indexOf('Item');
-          // console.log(urlObj, splittedQueryString, itemIdIndex)
-          // if (itemIdIndex) {
-          //   info.neweggID = splittedQueryString[itemIdIndex + 1];
-          // } else {
-          //   throw "cannot get neweggID..." + uri;
-          // }
-
-          console.log('info:', info);
-          process.exit(1);
-        });
+    if (query) {
+      while (match = regex.exec(query)) {
+        params[match[1]] = decodeURIComponent(match[2]);
       }
-    });
-  });
-}
-
-// ================= main ===================== //
-/*
-  gets the spec names for newegg usa
-  let d = document.querySelectorAll('#Specs > fieldset > dl > dt');
-  for(let i = 0; i < d.length; i++){ console.log(d[i].innerText) }
-*/
-function parseNeweggHTML(html) {
-  let $ = cheerio.load(html);
+    }
+    return params;
+  }
+  let data = { priceInfo: {} };
   let selectors = {
     // can take strings or functions with cherrio'ed html passed in
     'preSalePrice': '#landingpage-price > div > div > ul > li.price-was',
     'currentPrice': '#landingpage-price > div > div > ul > li.price-current',
     'savingsOnPrice': '#landingpage-price > div > div > ul > li.price-save',
     'noteOnPrice': '#landingpage-price > div > div > ul > li.price-note',
+    'hasPriceMatch': function () {
+      return !!document.querySelector('#landingpage-iron-egg > div > div.price-guarantee');
+    },
+    'specialPrice': '#landingpage-price > div > div > ul > li.price-map',
   };
-  let data = {};
   Object.keys(selectors).forEach(info => {
     if (typeof selectors[info] === 'function') {
-      data[info] = selectors[info]($);
+      data[info] = selectors[info]();
       return;
     }
     // console.log($)
     // console.log($('#landingpage-price > div > div > ul > li.price-current').text())
-    data[info] = $(selectors[info]).text();
+    let text = document.querySelector(selectors[info]).innerText;
+    data.priceInfo[info] = text === null || text === undefined ? '' : text;
   });
 
   // get the spec list and programmatically iterate through and get each spec
-  let specList = $('#Specs > fieldset > dl');
+  let specList = document.querySelectorAll('#Specs > fieldset > dl');
   if (specList) {
-    let children = specList.children();
-    let currentSpec = '';
-    for (let i = 0; i < children.length; i++) {
-      let child = children[i];
-      let initializedChild = $(child);
-      if (child.name === 'dt') {
-        currentSpec = initializedChild.text();
-      } else if (child.name === 'dd') {
-        data[currentSpec] = initializedChild.html().replace(/<br>/g, '\n');
-      }
+    for (let i = 0; i < specList.length; i++) {
+      let elem = specList[i];
+      let currentSpec = elem.querySelector('dt').innerText;
+      if (!currentSpec) continue;
+      let info = elem.querySelector('dd').innerText || '';
+      data[currentSpec] = info.replace(/<br>/g, '\n');
     }
+  }
+
+  // get the images
+  let imageElems = document.querySelectorAll('#synopsis > div.grpAside > div > ul > li > a > img');
+  data.images = [];
+  for (let i = 0; i < imageElems.length; i++) {
+    if (imageElems[i].src) {
+      data.images.push(imageElems[i].src);
+    }
+  }
+  data.url = window.location.href;
+  console.log('before parseUrl');
+  let params = parseUrl(data.url);
+  console.log('params', params)
+  let itemId = params['Item'];
+  if (itemId) {
+    data.neweggID = itemId;
+  } else {
+    console.error("cannot get neweggID..." + uri);
+    return;
   }
   return data;
 }
 
-function readSavedUrls(cb) {
-  console.time('readSavedUrls');
-  console.log('local docker ip:', splashDockerIP);
-  fs.readFile(config.newegg.usa.gamingLaptop.savedFilePath, 'utf-8', (err, data) => {
-    let uris = data.split('\n');
-    async.mapLimit(uris.slice(0, 5)
-      , 5, (uri, mapCB) => {
-      if (!uri) return mapCB();
+function writeToMongo(data, cb) {
+  let priceInfo = _.cloneDeep(data.priceInfo);
+  data.priceHistory = [priceInfo];
+  delete data.priceInfo;
 
-      getRequest(util.format(htmlDownloaderUrl, uri), (err, html) => {
-        if (err) {
-          console.error(err.error, err.message);
-          return mapCB();
-        }
-
-        fs.writeFileSync('newegg-' + uri.split('Item=')[1] + '.html', html);
-
-        let info = parseNeweggHTML(html);
-        info.url = uri;
-
-        let urlObj = url.parse(uri);
-        let parsedQS = qs.parse(urlObj.query);
-        let id = parsedQS['Item'];
-        if (id) {
-          info.neweggID = id;
-        } else {
-          throw "cannot get neweggID..." + uri;
-        }
-        // console.log(info);
-        mapCB(null, info);
+  Newegg.findOne({ neweggID: data.neweggID }, (err, product) => {
+    if (err) {
+      console.error(`Failed to findOne newegg product with id: ${data.neweggID}.`, err);
+      return cb(err);
+    }
+    if (!product) {
+      return Newegg.create(data, (err, product) => {
+        // console.info(`created a new newegg doc: ${data.neweggID}`);
+        cb();
       });
-    }, (err, infos) => {
-      console.timeEnd('readSavedUrls');
+    }
+    product.images = data.images;
+    product.priceHistory.push(priceInfo);
+    product.save((err) => {
       if (err) {
-        console.error('Failed to get all website info from newegg.', err);
+        console.error(`Failed to update newegg product with id: ${data.neweggID}.`, err);
         return cb(err);
       }
-      cb(null, infos);
+      // console.info(`updated newegg doc: ${data.neweggID} with: ${JSON.stringify(priceInfo, null, 3)}`);
+      cb();
     });
-    console.log(uris.length)
   });
 }
 
+function readSavedUrls(cb) {
+  console.time('readSavedUrls');
+  fs.readFile(config.newegg.usa.gamingLaptop.savedFilePath, 'utf8', (err, data) => {
+    if (err) {
+      console.error('Failed to read file at path:', config.newegg.usa.gamingLaptop.savedFilePath, err);
+      return cb(err);
+    }
+    let uris = data.split('\n');
+    console.log(uris.length)
+
+    // let nightmares = Array(config.nightmare.numWorkers).fill();
+    console.log('we have', config.nightmare.numWorkers, 'workers');
+    let urisPerWorker = 10 / config.nightmare.numWorkers;
+
+    async.each(Array.from({ length: config.nightmare.numWorkers }, (v, k) => k), (i, eachCB) => {
+      let nightmare = new Nightmare(config.nightmare.settings);
+
+      let arr = uris.slice(urisPerWorker*i,urisPerWorker*(i+1));
+
+      async.eachLimit(arr, 1, (uri, eachLimitCB) => {
+        console.time(`${i}: ${uri}`);
+        nightmare
+          .useragent(config.nightmare.useragent)
+          .viewport(400,150)
+          .goto(uri)
+          .wait('#landingpage-price > div > div > ul > li.price-current')
+          .evaluate(function() {
+            function parseUrl (url) {
+              let query = window.location.search;
+              let regex = /[?&;](.+?)=([^&;]+)/g;
+              let match;
+
+              let params = {};
+
+              if (query) {
+                while (match = regex.exec(query)) {
+                  params[match[1]] = decodeURIComponent(match[2]);
+                }
+              }
+              return params;
+            }
+            // return document.querySelector('#landingpage-price > div > div > ul > li.price-current').innerText;
+            let data = { priceInfo: {} };
+            let selectors = {
+              // can take strings or functions with cherrio'ed html passed in
+              'preSalePrice': '#landingpage-price > div > div > ul > li.price-was', // very new product
+              'price': '#landingpage-price > div > div > ul > li.price-current',
+              'savingsOnPrice': '#landingpage-price > div > div > ul > li.price-save',
+              'noteOnPrice': '#landingpage-price > div > div > ul > li.price-note', // says if its out of stock
+              'hasPriceMatch': function () {
+                return !!document.querySelector('#landingpage-iron-egg > div > div.price-guarantee');
+              },
+              'specialPrice': '#landingpage-price > div > div > ul > li.price-map',
+            };
+            Object.keys(selectors).forEach(info => {
+              if (typeof selectors[info] === 'function') {
+                data[info] = selectors[info]();
+                return;
+              }
+              // console.log($)
+              // console.log($('#landingpage-price > div > div > ul > li.price-current').text())
+              let text = document.querySelector(selectors[info]).innerText;
+              data.priceInfo[info] = text === null || text === undefined ? '' : text;
+            });
+
+            // get the spec list and programmatically iterate through and get each spec
+            let specList = document.querySelectorAll('#Specs > fieldset > dl');
+            if (specList) {
+              for (let i = 0; i < specList.length; i++) {
+                let elem = specList[i];
+                let currentSpec = elem.querySelector('dt').innerText;
+                if (!currentSpec) continue;
+                let info = elem.querySelector('dd').innerText || '';
+                data[currentSpec] = info.replace(/<br>/g, '\n');
+              }
+            }
+
+            // get the images
+            let imageElems = document.querySelectorAll('#synopsis > div.grpAside > div > ul > li > a > img');
+            data.images = [];
+            for (let i = 0; i < imageElems.length; i++) {
+              if (imageElems[i].src) {
+                data.images.push(imageElems[i].src);
+              }
+            }
+            data.url = window.location.href;
+            // console.log('before parseUrl');
+            let params = parseUrl(data.url);
+            // console.log('params', params)
+            let itemId = params['Item'];
+            if (itemId) {
+              data.neweggID = itemId;
+            } else {
+              console.error("cannot get neweggID..." + uri);
+              return;
+            }
+            return data;
+          })
+          .then(info => {
+            writeToMongo(info, (err) => {
+              if (err) return eachLimitCB();
+              console.timeEnd(`${i}: ${uri}`);
+              eachLimitCB();
+            });
+          }, (err) => {
+            console.error('Failed to get data from uri:', uri, err);
+            eachLimitCB();
+          });
+      }, (err) => {
+        nightmare.end().then().catch((err) => { console.error(err); });
+        eachCB();
+      });
+    }, (err) => {
+      cb();
+    });
+  });
+};
+
+mongoose.Promise = global.Promise;
+mongoose.connect(startupConfig.db);
+var db = mongoose.connection;
+db.on('error', function () {
+  console.error('failed to connect to db:', startupConfig.db);
+  throw new Error('unable to connect to database at ' + startupConfig.db);
+});
+
+var models = glob.sync(startupConfig.root + '/app/models/*.js');
+models.forEach(function (model) {
+  require(model);
+});
+
+console.info('mongo db ready');
+
+const Newegg = mongoose.model('Newegg');
+
 // readLocalSavedHTML()
-readSavedUrls((err, results) => {
-  console.log(results)
-  console.log('done')
+readSavedUrls(err => {
+  console.log('job\'s done');
   process.exit();
 });

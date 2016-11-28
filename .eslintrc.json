@@ -1,13 +1,14 @@
 {
     "env": {
-        "browser": true,
-        "es6": true
+        "node": true,
+        "es6": true,
+        "mongo": true
     },
     "extends": "eslint:recommended",
     "rules": {
         "indent": [
             "error",
-            4
+            2
         ],
         "linebreak-style": [
             "error",
@@ -21,5 +22,6 @@
             "error",
             "always"
         ]
-    }
+    },
+    "extends": "common"
 }

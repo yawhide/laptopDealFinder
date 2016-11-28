@@ -4,16 +4,16 @@ var express = require('express'),
   Newegg = mongoose.model('Newegg');
 
 const _ = require('lodash');
-const cronConfig = require('../../cron/config.js');
+const constants = require('../../config/constants.js');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-module.exports = function (app) {
+module.exports = function(app) {
   app.use('/choose', router);
 };
 
-router.get('/', function (req, res, next) {
+router.get('/', function(req, res, next) {
 
   res.render('choose', {});
 });

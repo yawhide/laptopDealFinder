@@ -20,6 +20,7 @@
     "mongoose-version": "^1.0.0",
     "morgan": "^1.6.1",
     "needle": "^1.1.0",
+    "nightmare": "^2.8.1",
     "nunjucks": "^2.0.0",
     "qs": "^6.2.1",
     "selenium-webdriver": "^3.0.0-beta-3",
