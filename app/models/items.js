@@ -53,8 +53,8 @@ ItemsSchema.virtual('getBestPriceSource').get(function () {
 //   return `Out of stock. Last listed price: ${lastListedPrice || 'n/a'}`;
 // });
 
-mongoose.model('Items', ItemsSchema);
-
+let items = mongoose.model('Items', ItemsSchema);
+module.exports = items;
 
 const getBestPricedSource = function () {
   let bestPrice = Number.POSITIVE_INFINITY;

@@ -8,6 +8,8 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
+const itemsHelper = require('../../library/items-helper');
+
 module.exports = function (app) {
   app.use('/newegg', router);
 };
@@ -125,12 +127,21 @@ router.get('/usa/groupby/gpu/price', function (req, res, next) {
   });
 });
 
-
-router.post('/usa/create', function (req, res, next) {
-  if (_.isEmpty(req.body)) {
+router.post('/usa/create', function(req, res, next) {
+  let info = req.body;
+  if (_.isEmpty(info)) {
     console.error('hit newegg usa create with an empty body');
     return res.sendStatus(400);
   }
+  itemsHelper.writeToMongo(info.model, info.sourceName, info, (err) => {
+    if (err) {
+      console.error('Failed to write to mongo item.', err);
+    }
+    res.sendStatus(200);
+  });
+
+
+  return;
   let data = _.cloneDeep(req.body);
   let priceInfo = _.cloneDeep(data.priceInfo);
   data.priceHistory = [priceInfo];
@@ -160,8 +171,9 @@ router.post('/usa/create', function (req, res, next) {
   });
 });
 
-router.get('/usa/urllist', function (req, res, next) {
+router.get('/usa/urllist', function(req, res, next) {
   let filePath = path.resolve(__dirname, `../../cron/${cronConfig.newegg.usa.gamingLaptop.savedFilePath}`);
+
   fs.readFile(filePath, 'utf8', (err, contents) => {
     if (err) {
       console.error('Failed to read local url list.', err);
@@ -169,6 +181,8 @@ router.get('/usa/urllist', function (req, res, next) {
     }
     let urls = contents.split('\n');
     if (urls[urls.length - 1] === '') urls.splice(urls.length - 1);
+    res.json(urls);
+    return;
     Newegg.find((err, products) => {
       if (err) {
         console.error('Failed to get all except urls.', err);

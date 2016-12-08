@@ -9,7 +9,7 @@ exports.runNightmare = function(fn, uris, cb) {
   console.log('we have', config.nightmare.numWorkers, 'workers');
   let urisPerWorker = uris.length / config.nightmare.numWorkers;
 
-  async.each(Array.from({ length: config.nightmare.numWorkers }, (i, j) => j), (i, eachCB) => {
+  async.each(Array.from({ length: 1 }, (i, j) => j), (i, eachCB) => {
     let nightmare = new Nightmare(config.nightmare.settings);
 
     let arr = uris.slice(urisPerWorker * i, urisPerWorker * (i + 1));

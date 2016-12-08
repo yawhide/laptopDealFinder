@@ -136,7 +136,8 @@ function nightmareLaptopPageFn(nightmare, uri, cb) {
       // get the spec list and programmatically iterate through and get each spec
       let specListSelectors = [
         '#content > table > tbody > tr > td > div > table:nth-child(7) > tbody > tr:nth-child(2) > td:nth-child(2) > table:nth-child(1) > tbody > tr:nth-child(2) > td > table > tbody > tr:nth-child(3) > td > table > tbody > tr > td > table > tbody > tr:nth-child(2) > td > div > div > ul:nth-child(1) > ul > li',
-        '#content > table > tbody > tr > td > div > table:nth-child(7) > tbody > tr:nth-child(2) > td:nth-child(2) > table:nth-child(1) > tbody > tr:nth-child(2) > td > table > tbody > tr:nth-child(4) > td > table > tbody > tr > td > table > tbody > tr:nth-child(2) > td > div > div > ul:nth-child(1) > ul > li'
+        '#content > table > tbody > tr > td > div > table:nth-child(7) > tbody > tr:nth-child(2) > td:nth-child(2) > table:nth-child(1) > tbody > tr:nth-child(2) > td > table > tbody > tr:nth-child(4) > td > table > tbody > tr > td > table > tbody > tr:nth-child(2) > td > div > div > ul:nth-child(1) > ul > li',
+        '#content > table > tbody > tr > td > div > table:nth-child(7) > tbody > tr:nth-child(2) > td:nth-child(2) > table:nth-child(1) > tbody > tr:nth-child(3) > td > table > tbody > tr:nth-child(3) > td > table > tbody > tr > td > table > tbody > tr:nth-child(2) > td > div > div > ul:nth-child(1) > ul > li'
       ];
       for (let j = 0; j < specListSelectors.length; j++) {
         let specList = document.querySelectorAll(specListSelectors[j]);

@@ -51,3 +51,6 @@ newegg-extension/package
 
 cron/*.txt
 config/config.json
+redditSuggest/node_modules
+redditSuggest/reddit_auth_token
+redditSuggest/config.json

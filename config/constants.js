@@ -1,5 +1,11 @@
 const extend = require('extend');
-const override = require('./config.json');
+
+let override;
+try {
+  override = require('./config.json');
+} catch (e) {
+  override = {};
+}
 
 let config = {
   newegg: {

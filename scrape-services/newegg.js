@@ -24,7 +24,7 @@ function getUriFromNeweggUsa(pageNumber, cb) {
         if (paginationElem && paginationElem.html()) {
           // console.log(paginationElem, paginationElem.html())
           let splitOnPagesText = paginationElem.html().split('/');
-          neweggPagesArray = splitOnPagesText.length > 0 ? Array(parseInt(splitOnPagesText[1])).fill().map((x,i)=>i+2) : null;
+          neweggPagesArray = splitOnPagesText.length > 0 ? Array(parseInt(splitOnPagesText[1])).fill().map((x, i) => i + 2) : null;
           // console.log(neweggPagesArray, parseInt(splitOnPagesText[1]))
         }
       }
@@ -45,14 +45,14 @@ function getUriFromNeweggUsa(pageNumber, cb) {
   });
 }
 
-exports.getGamingLaptopUris = function (cb) {
+exports.getGamingLaptopUris = function(cb) {
   console.time('created gaming laptop url list');
   getUriFromNeweggUsa(1, (err, uris, neweggPagesArray) => {
     if (neweggPagesArray.length) {
       async.mapLimit(neweggPagesArray.slice(1), 5, (pageNumber, mapCB) => {
         getUriFromNeweggUsa(pageNumber, mapCB);
       }, (err, restOfUris) => {
-        let allUris = _.uniq(uris.concat(restOfUris.reduce((a,b)=>a.concat(b))));
+        let allUris = _.uniq(uris.concat(restOfUris.reduce((a, b) => a.concat(b))));
         // console.log(JSON.stringify(allUris, null, 3));
         fs.writeFileSync(`cron/${constants.newegg.usa.gamingLaptop.savedFilePath}`, allUris.join('\n'));
         console.log('done, wrote', allUris.length, 'urls');
@@ -63,7 +63,7 @@ exports.getGamingLaptopUris = function (cb) {
       cb('failed');
     }
   });
-}
+};
 
 // b&h
 // `https://www.bhphotovideo.com/c/buy/gaming-notebooks/ipp/100/ci/24610/pn/${pageNumber}/N/3670569600/view/GALLERY`
@@ -114,7 +114,17 @@ function nightmareLaptopPageFn(nightmare, uri, cb) {
         'hasPriceMatch': function() {
           return !!document.querySelector('#landingpage-iron-egg > div > div.price-guarantee');
         },
-        'specialPrice': '#landingpage-price > div > div > ul > li.price-map'
+        'specialPrice': '#landingpage-price > div > div > ul > li.price-map',
+        'notAvailable': function() {
+          let elem = document.querySelector('#version_promo > h2');
+          if (elem && elem.innerText.toLowerCase().indexOf('not available') > -1) return true;
+          return false;
+        },
+        'outOfStock': function() {
+          let elem = document.querySelector('#landingpage-stock > strong > span');
+          if (elem && elem.innerText.toLowerCase().indexOf('out of stock') > -1) return true;
+          return false;
+        }
       };
       Object.keys(selectors).forEach(info => {
         if (typeof selectors[info] === 'function') {
@@ -161,7 +171,7 @@ function nightmareLaptopPageFn(nightmare, uri, cb) {
       return data;
     })
     .then(info => {
-      console.log(JSON.stringify(info, null, 2));
+      // console.log(JSON.stringify(info, null, 2));
       cb(null, info);
     }, (err) => {
       console.error('Failed to get data from uri:', uri, err);
