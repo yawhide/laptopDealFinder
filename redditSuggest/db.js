@@ -1,10 +1,10 @@
 const pg = require('pg');
-const config = require('config.js');
+const config = require('./config');
 
 let pool = new pg.Pool(config.pg);
 
 module.exports = {
-   query: (text, values, cb) => {
+  query: (text, values, cb) => {
     pool.query(text, values, cb);
       // pool.connect((err, client, done) => {
       //   client.query(text, values, (err, result) => {
@@ -12,5 +12,5 @@ module.exports = {
       //     cb(err, result);
       //   });
       // });
-   }
-}
+  }
+};

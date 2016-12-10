@@ -2,7 +2,7 @@ const extend = require('extend');
 
 let config = {
   pg: {
-    user: 'yawhide',
+    user: 'postgres',
     database: 'postgres',
     host: 'localhost',
     port: '5432',

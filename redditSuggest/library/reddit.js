@@ -1,6 +1,7 @@
 const _ = require('lodash');
 const config = require('../config');
 const fs = require('fs');
+const reddit = require('../models/reddit');
 const request = require('request');
 
 const subreddits = [
@@ -108,29 +109,57 @@ function _makeApiCall(suffix, qs, cb) {
         });
       });
     }
+    console.info(
+      'x-ratelimit-remaining', resp.headers['x-ratelimit-remaining'],
+      'x-ratelimit-used', resp.headers['x-ratelimit-used'],
+      'x-ratelimit-reset', resp.headers['x-ratelimit-reset']
+    );
+
     cb(null, body);
   });
 }
 
-function getAllSubredditsFromPastYear() {
+function getAllThreadsFromPastYear() {
   const lastYearTodayUnixTimestamp = Math.floor((new Date().setYear(new Date().getFullYear() - 1)) / 1000);
   const uri = `r/${subreddits[0]}/new`;
   let count = 0;
   let after = '';
   function run() {
-    let qs = { raw_json: 1, count, limit: 100, show: 'all', after };
+    let qs = { raw_json: 1, limit: 100, show: 'all', after };
     _makeApiCall(uri, qs, (err, body) => {
       // console.log(err, body);
       // console.log(JSON.stringify(body.data.children.map(c=>c.data.created, null, 2)));
       if (body.data.children[0].data.created < lastYearTodayUnixTimestamp) {
         return;
       }
-      let data = body.data.children.map(c => formatSubredditForDb(c)).filter(c => c);
-      console.log(JSON.stringify(data, null, 2));
-      //TODO save to db
-      after = body.data.after;
-      count += 100;
-      setImmediate(run);
+      let data = [];
+      body.data.children.forEach(child => {
+        let arr = formatSubredditForDb(child);
+        if (!arr) return;
+        data.push(arr);
+      });
+      // console.log(JSON.stringify(data, null, 2));
+      let date = new Date(body.data.children[0].data.created_utc * 1000);
+      let day = date.getDate();
+      let monthIndex = date.getMonth();
+      let year = date.getFullYear();
+      console.log(day, monthIndex + 1, year);
+      reddit.saveThreads(data, (err) => {
+        if (err) {
+          console.error(`Failed to save comments.`, err);
+        } else {
+          console.info('successfully saved comments');
+        }
+        after = body.data.after;
+        count += 100;
+        if (!after) {
+          console.info('no more!');
+          return;
+        }
+        console.log(after, count);
+        console.log();
+        setImmediate(run);
+      });
     });
   }
   run();
@@ -138,48 +167,80 @@ function getAllSubredditsFromPastYear() {
 
 function formatSubredditForDb(child) {
   if (child.kind !== 't3') return;
-  return {
-    created_utc: child.data.created_utc,
-    permalink: child.data.permalink,
-    // selftext: child.data.selftext,
-    selftext_html: child.data.selftext_html,
-    subreddit: child.data.subreddit,
-    subreddit_id: child.data.subreddit_id,
-    thread_id: child.data.id,
-    title: child.data.title
-  };
+  return [
+    // created_utc: new Date(child.data.created_utc * 1000).toISOString(),
+    // permalink: child.data.permalink,
+    // // selftext: child.data.selftext,
+    // selftext_html: child.data.selftext_html,
+    // subreddit: child.data.subreddit,
+    // subreddit_id: child.data.subreddit_id,
+    // thread_id: child.data.id,
+    // title: child.data.title
+    new Date(child.data.created_utc * 1000).toISOString(),
+    child.data.permalink,
+    // child.data.selftext,
+    child.data.selftext_html,
+    child.data.subreddit,
+    child.data.subreddit_id,
+    child.data.id,
+    child.data.title
+  ];
 }
 
 function formatCommentForDb(child) {
   if (child.kind !== 't1') return;
-  return {
-    author: child.data.author,
-    // body: child.data.body,
-    body_html: child.data.body_html,
-    comment_id: child.data.id,
-    created_utc: child.data.created_utc,
-    subreddit: child.data.subreddit,
-    subreddit_id: child.data.subreddit_id,
-    thread_id: child.data.parent_id
-  };
+  return [
+    //author: child.data.author,
+    //// body: child.data.body,
+    //body_html: child.data.body_html,
+    //comment_id: child.data.id,
+    //created_utc: new Date(child.data.created_utc * 1000).toISOString(),
+    //subreddit: child.data.subreddit,
+    //subreddit_id: child.data.subreddit_id,
+    //thread_id: child.data.parent_id
+    child.data.author,
+    // child.data.body,
+    child.data.body_html,
+    child.data.id,
+    new Date(child.data.created_utc * 1000).toISOString(),
+    child.data.subreddit,
+    child.data.subreddit_id,
+    child.data.parent_id
+  ];
 }
 
-getAllSubredditsFromPastYear()
+getAllThreadsFromPastYear()
 
+// reddit.getThreads((err, result) => {
+//   console.log(err)
+//   console.log(JSON.stringify(result, null, 2));
+// });
 
+function getSomeComments() {
 
-
-_makeApiCall(`r/${subreddits[0]}/comments/5h7mgh`, { showmore: true}, (err, body) => {
-  // console.log(err, body);
-  // console.log(JSON.stringify(body, null, 2));
-  let data = [];
-  body.forEach(listing => {
-    listing.data.children.forEach(child => {
-      if (child.kind === 't1') {
-        data.push(formatCommentForDb(child));
+  _makeApiCall(`r/${subreddits[0]}/comments/5h7mgh`, { showmore: true}, (err, body) => {
+    let data = [];
+    body.forEach(listing => {
+      listing.data.children.forEach(child => {
+        if (child.kind === 't1') {
+          let arr = formatCommentForDb(child);
+          if (!arr) return;
+          data.push(arr);
+        }
+      });
+    });
+    reddit.saveComments(data, (err) => {
+      if (err) {
+        console.error(`Failed to save comments.`, err);
+        return;
       }
+      console.info('successfully saved comments');
     });
   });
-  data = data.filter(c => c);
-  console.log(JSON.stringify(data, null, 2));
-});
+}
+
+
+
+//TODO rss feed for comments
+// https://www.reddit.com/r/SuggestALaptop/comments/.rss
+// https://github.com/danmactough/node-feedparser
