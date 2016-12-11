@@ -33,11 +33,13 @@ const threadsSchema = `
 const commentsSchema = `
   author varchar(100),
   body_html text,
-  comment_id varchar(100) PRIMARY KEY,
+  comment_id varchar(100),
   created_utc timestamp,
+  link_title text,
+  name varchar(100),
   subreddit varchar(255),
   subreddit_id varchar(100),
-  thread_id varchar(100) REFERENCES threads(thread_id)`;
+  thread_id varchar(100)`;
 
 function prepare(cb) {
   if (db) {
@@ -89,7 +91,7 @@ exports.saveThreads = function(threads, cb) {
 
 exports.saveComments = function(comments, cb) {
   prepare(() => {
-    let sql = format('INSERT INTO comments_tmp VALUES %L ON CONFLICT (comment_id) DO NOTHING;', comments);
+    let sql = format('INSERT INTO comments_tmp VALUES %L;', comments);
     // console.log(sql);
     db.query(sql, (err) => {
       if (err) return cb(err);
@@ -98,14 +100,19 @@ exports.saveComments = function(comments, cb) {
   });
 };
 
-exports.mostRecentThread = function (cb) {
+exports.mostRecentThread = function(cb) {
   prepare(() => {
-    let sql = format('SELECT FROM threads_tmp WHERE ');//TODO
+//     WITH T AS (
+//     SELECT *, ROW_NUMBER() OVER(PARTITION BY thread_id ORDER BY created_utc DESC) AS rn
+//     FROM threads_tmp
+// )
+// SELECT * FROM T WHERE rn = 1;
+    let sql = 'select * from threads_tmp order by created_utc desc limit 1;';
     // console.log(sql);
-    db.query(sql, (err) => {
+    db.query(sql, (err, result) => {
       if (err) return cb(err);
-      cb();
+      cb(null, result);
     });
   });
-}
+};
 

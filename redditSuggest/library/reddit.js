@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const async = require('async');
 const config = require('../config');
 const fs = require('fs');
 const reddit = require('../models/reddit');
@@ -22,8 +23,6 @@ try {
 } catch (e) {
   console.error(e);
 }
-
-// console.log(config)
 
 function _getToken(cb) {
   console.log(_.get(_authData, 'expiresEpochTime', 0), new Date().getTime() + 60 * 60 * 1000);
@@ -209,7 +208,12 @@ function formatCommentForDb(child) {
   ];
 }
 
-getAllThreadsFromPastYear()
+// getAllThreadsFromPastYear()
+
+// reddit.mostRecentThread((err, result) => {
+//   console.log(err)
+//   console.log(result.rows)
+// })
 
 // reddit.getThreads((err, result) => {
 //   console.log(err)
