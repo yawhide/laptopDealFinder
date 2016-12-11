@@ -22,6 +22,7 @@ const cargo = async.cargo((tasks, cargoCB) => {
     }
     if (chunk.startsWith('data') && chunk.indexOf('https://www.amazon.com') >= 0) {
       let parsed = JSON.parse(chunk.substring(5));
+      if (parsed.body_html.indexOf('https://www.amazon.com') === -1) return;
       let row = [
         parsed.author,
         parsed.body_html,
