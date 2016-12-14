@@ -32,7 +32,10 @@ fs.readdir('comments/', (err, filePaths) => {
     async.eachLimit(body, 1, (commentInfo, eachLimitCB2) => {
       let redditUrl = commentInfo.redditUrl.substring(redditPrefixLen);
       reddit.getSomeComments(redditUrl, eachLimitCB2);
-    }, () => {
+    }, (err) => {
+      if (err) {
+        process.exit(1);
+      }
       eachLimitCB();
     });
   });
