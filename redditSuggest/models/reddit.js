@@ -98,6 +98,7 @@ exports.saveComments = function(comments, cb) {
     db.query(sql, (err) => {
       if (err) {
         log.error('sql:', sql);
+        log.error('comments:', comments);
         return cb(err);
       }
       cb();
