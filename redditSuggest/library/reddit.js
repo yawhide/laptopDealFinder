@@ -225,6 +225,10 @@ function formatCommentForDb(child) {
 exports.getSomeComments = function (url, cb) {
   let now = new Date();
   _makeApiCall(url, { showmore: true}, (err, body) => {
+    if (err) {
+      log.error(`Failed to make api call, url: ${url}.`, err);
+      return cb(err);
+    }
     let data = [];
     body.forEach(listing => {
       listing.data.children.forEach(child => {
@@ -235,17 +239,16 @@ exports.getSomeComments = function (url, cb) {
         }
       });
     });
-    log.debug(data)
-    return;
     reddit.saveComments(data, (err) => {
       if (err) {
         console.error(`Failed to save comments.`, err);
         return;
       }
       console.info('successfully saved comments');
+      let timeDiff = 1000 - (new Date() - now);
       setTimeout(function () {
         cb();
-      }, 1000 - (new Date() - now));
+      }, timeDiff >= 0 ? timeDiff : 0);
     });
   });
 }
