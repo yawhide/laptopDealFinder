@@ -94,7 +94,10 @@ exports.saveComments = function(comments, cb) {
     let sql = format('INSERT INTO comments VALUES %L;', comments);
     // console.log(sql);
     db.query(sql, (err) => {
-      if (err) return cb(err);
+      if (err) {
+        log.error('sql:', sql);
+        return cb(err);
+      }
       cb();
     });
   });
