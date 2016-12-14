@@ -18,7 +18,8 @@
     "pg-format": "^1.0.3",
     "request": "^2.79.0",
     "serve-favicon": "~2.3.0",
-    "snoowrap": "^1.11.3"
+    "snoowrap": "^1.11.3",
+    "x-ray": "^2.3.1"
   },
   "devDependencies": {
     "mocha": "^3.2.0"

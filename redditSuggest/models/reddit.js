@@ -91,7 +91,7 @@ exports.saveThreads = function(threads, cb) {
 
 exports.saveComments = function(comments, cb) {
   prepare(() => {
-    let sql = format('INSERT INTO comments_tmp VALUES %L;', comments);
+    let sql = format('INSERT INTO comments VALUES %L;', comments);
     // console.log(sql);
     db.query(sql, (err) => {
       if (err) return cb(err);

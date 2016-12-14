@@ -5,6 +5,8 @@ const fs = require('fs');
 const reddit = require('../models/reddit');
 const request = require('request');
 
+const log = require('better-logs')('reddit-model');
+
 const subreddits = [
   'SuggestALaptop',
   'Cameras',
@@ -220,9 +222,9 @@ function formatCommentForDb(child) {
 //   console.log(JSON.stringify(result, null, 2));
 // });
 
-function getSomeComments() {
-
-  _makeApiCall(`r/${subreddits[0]}/comments/5h7mgh`, { showmore: true}, (err, body) => {
+exports.getSomeComments = function (url, cb) {
+  let now = new Date();
+  _makeApiCall(url, { showmore: true}, (err, body) => {
     let data = [];
     body.forEach(listing => {
       listing.data.children.forEach(child => {
@@ -233,12 +235,17 @@ function getSomeComments() {
         }
       });
     });
+    log.debug(data)
+    return;
     reddit.saveComments(data, (err) => {
       if (err) {
         console.error(`Failed to save comments.`, err);
         return;
       }
       console.info('successfully saved comments');
+      setTimeout(function () {
+        cb();
+      }, 1000 - (new Date() - now));
     });
   });
 }
