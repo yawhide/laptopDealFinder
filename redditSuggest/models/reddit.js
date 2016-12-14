@@ -2,6 +2,8 @@ const _ = require('lodash');
 const async = require('async');
 const format = require('pg-format');
 
+const log = require('better-logs')('reddit-model');
+
 let db;
 let prepCallbacks = [];
 
