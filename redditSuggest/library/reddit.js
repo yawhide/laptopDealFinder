@@ -210,6 +210,23 @@ function formatCommentForDb(child) {
   ];
 }
 
+function getAllComments(body) {
+  let data = [];
+  body.forEach(listing => {
+    listing.data.children.forEach(child => {
+      if (child.kind === 't1') {
+        let arr = formatCommentForDb(child);
+        if (child.data.replies) {
+          arr = arr.concat(getAllComments([child.data.replies]))
+        }
+        if (!arr) return;
+        data = data.concat(arr);
+      }
+    });
+  });
+  return data;
+}
+
 // getAllThreadsFromPastYear()
 
 // reddit.mostRecentThread((err, result) => {
@@ -229,16 +246,14 @@ exports.getSomeComments = function (url, cb) {
       log.error(`Failed to make api call, url: ${url}.`, err);
       return cb(err);
     }
-    let data = [];
-    body.forEach(listing => {
-      listing.data.children.forEach(child => {
-        if (child.kind === 't1') {
-          let arr = formatCommentForDb(child);
-          if (!arr) return;
-          data.push(arr);
-        }
-      });
-    });
+    log.debug(err, body)
+    let data = getAllComments(body);
+    if (!data.length) {
+      log.debug(body)
+      return
+    }
+    log.debug(data.length, url)
+    return
     reddit.saveComments(data, (err) => {
       if (err) {
         console.error(`Failed to save comments.`, err);
