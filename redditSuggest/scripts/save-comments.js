@@ -39,7 +39,10 @@ fs.readdir('comments/', (err, filePaths) => {
     // log.debug(uri.substring(redditPrefixLen) + '/.json')
     reddit.getSomeComments(uri.substring(redditPrefixLen) + '.json', eachLimitCB);
   }, (err) => {
-    if (err) process.exit(1);
+    if (err) {
+      log.error(err);
+      process.exit(1);
+    }
     log.debug('all done!', allUrls.length);
   });
 });

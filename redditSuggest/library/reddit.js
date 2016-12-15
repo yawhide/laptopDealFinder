@@ -215,12 +215,12 @@ function getAllComments(body) {
   body.forEach(listing => {
     listing.data.children.forEach(child => {
       if (child.kind === 't1') {
-        let arr = formatCommentForDb(child);
+        let row = formatCommentForDb(child);
+        if (!row) return [];
         if (child.data.replies) {
-          arr = arr.concat(getAllComments([child.data.replies]))
+          data = data.concat(getAllComments([child.data.replies]));
         }
-        if (!arr) return;
-        data = data.concat(arr);
+        data.push(row);
       }
     });
   });
@@ -246,14 +246,11 @@ exports.getSomeComments = function (url, cb) {
       log.error(`Failed to make api call, url: ${url}.`, err);
       return cb(err);
     }
-    log.debug(err, body)
     let data = getAllComments(body);
-    if (!data.length) {
-      log.debug(body)
-      return
+    if (!_.get(data, 'length')) {
+      log.debug(body, url)
+      process.exit(1);
     }
-    log.debug(data.length, url)
-    return
     reddit.saveComments(data, (err) => {
       if (err) {
         console.error(`Failed to save comments.`, err);
@@ -263,7 +260,7 @@ exports.getSomeComments = function (url, cb) {
       let timeDiff = 1000 - (new Date() - now);
       setTimeout(function () {
         cb();
-      }, timeDiff >= 0 ? timeDiff : 0);
+      }, timeDiff >= 20 ? timeDiff : 20);
     });
   });
 }
