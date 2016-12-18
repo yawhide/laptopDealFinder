@@ -1,10 +1,13 @@
 const async = require('async');
 const fs = require('fs');
+const log = require('better-logs')('laptop-hits-comments-stage-2');
 const Xray = require('x-ray');
 
 const x = Xray();
 
-const commentLinks = JSON.parse(fs.readFileSync('results.json', 'utf8'));
+const stage1FilePath = 'scripts/laptop-hits-stage-1.json';
+
+const commentLinks = JSON.parse(fs.readFileSync(stage1FilePath, 'utf8'));
 const prefixLen = 'http://www.laptophits.com/products/'.length
 
 let count = 0;
@@ -16,13 +19,19 @@ async.eachLimit(commentLinks, 1, (link, eachCB) => {
       return eachCB();
     }
     x(link.comments, '.content ul li', [{
-      redditUrl: 'a:nth-child(2)@href'
+      redditUrl: 'a:nth-child(2)@href',
     }])
       .paginate('a.next_page@href')
-      .write('comments/' + splitted[0] + '.json');
-    setTimeout(function () {
-      console.log(count++, '/ 355');
-      eachCB();
-    }, 10000);
+      // .delay(5000,10000)
+      // .write('comments/' + splitted[0] + '.json')
+      (function(err, obj) {
+        // log.debug(err, obj, obj.length)
+        fs.writeFileSync('comments/' + splitted[0] + '.json', JSON.stringify(obj));
+        console.log(`${count}/${commentLinks.length}, num: ${obj.length}`);
+        count++;
+        setTimeout(() => {
+          eachCB();
+        }, 100);
+      })
   })
 });

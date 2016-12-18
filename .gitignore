@@ -51,6 +51,14 @@ newegg-extension/package
 
 cron/*.txt
 config/config.json
+
+# reddit suggest
 redditSuggest/node_modules
 redditSuggest/reddit_auth_token
 redditSuggest/config.json
+redditSuggest/comments/*
+!redditSuggest/comments/.gitkeep
+redditSuggest/scripts/comment_file_path.txt
+redditSuggest/scripts/laptop-hits-stage-1.json
+redditSuggest/scripts/uniq_comment_file_path.txt
+redditSuggest/uniq_comment_file_path_v1.txt

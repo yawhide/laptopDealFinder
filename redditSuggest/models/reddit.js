@@ -1,29 +1,9 @@
 const _ = require('lodash');
 const async = require('async');
-const format = require('pg-format');
-
+const Comments = require('./comments');
+const Threads = require('./threads');
 const log = require('better-logs')('reddit-model');
 
-let db;
-let prepCallbacks = [];
-
-// laptops
-  // model varchar(255) NOT NULL,
-  // mentions integer DEFAULT 1,
-  // price numeric(10, 2),
-  // url text,
-  // brand varchar(100),
-  // release_date date,
-  // screen_size varchar(10),
-
-const threadsSchema = `
-  created_utc timestamp,
-  permalink text,
-  selftext_html text,
-  subreddit varchar(255),
-  subreddit_id varchar(100),
-  thread_id varchar(100) PRIMARY KEY,
-  title text`;
 
   // mentions
   // model varchar(255) NOT NULL,
@@ -32,53 +12,38 @@ const threadsSchema = `
   // subreddit text,
   // subreddit varchar(255),
 
-const commentsSchema = `
-  author varchar(100),
-  body_html text,
-  comment_id varchar(100),
-  created_utc timestamp,
-  link_title text,
-  name varchar(100),
-  subreddit varchar(255),
-  subreddit_id varchar(100),
-  thread_id varchar(100)`;
+  // laptops
+  // model varchar(255) NOT NULL,
+  // mentions integer DEFAULT 1,
+  // price numeric(10, 2),
+  // url text,
+  // brand varchar(100),
+  // release_date date,
+  // screen_size varchar(10),
 
-function prepare(cb) {
-  if (db) {
-    cb();
-  } else {
-    prepCallbacks.push(cb);
-  }
-}
 
-(function() {
-  let pg = require('../db');
-  async.series([
-    (scb) => { pg.query(`CREATE TABLE IF NOT EXISTS threads (${threadsSchema});`, scb); },
-    (scb) => { pg.query(`CREATE TABLE IF NOT EXISTS threads_tmp (${threadsSchema});`, scb); },
-    (scb) => { pg.query(`CREATE TABLE IF NOT EXISTS comments (${commentsSchema});`, scb); },
-    (scb) => { pg.query(`CREATE TABLE IF NOT EXISTS comments_tmp (${commentsSchema});`, scb); }
-  ], () => {
-    db = pg;
-    async.each(prepCallbacks, (prepCallback, eachCB) => {
-      prepCallback();
-      eachCB();
-    }, () => {
-      prepCallbacks = [];
-    });
-  });
-})();
+// let prepCallbacks = [];
+// let ready = false;
+// function prepare(cb) {
+//   if (ready) {
+//     cb();
+//   } else {
+//     prepCallbacks.push(cb);
+//   }
+// }
 
-exports.getThreads = function(cb) {
-  prepare(() => {
-    let sql = format('SELECT * FROM threads_tmp;');
-    console.log(sql);
-    db.query(sql, (err, result) => {
-      if (err) return cb(err);
-      cb(null, result);
-    });
-  });
-};
+// (function() {
+//   Promise.all([Comments.sync, Threads.sync])
+//     .then(() => {
+//       ready = true;
+//       async.each(prepCallbacks, (prepCallback, eachCB) => {
+//         prepCallback();
+//         eachCB();
+//       }, () => {
+//         prepCallbacks = [];
+//       });
+//     });
+// })();
 
 exports.saveThreads = function(threads, cb) {
   prepare(() => {
@@ -86,21 +51,6 @@ exports.saveThreads = function(threads, cb) {
     // console.log(sql);
     db.query(sql, (err) => {
       if (err) return cb(err);
-      cb();
-    });
-  });
-};
-
-exports.saveComments = function(comments, cb) {
-  prepare(() => {
-    let sql = format('INSERT INTO comments VALUES %L;', comments);
-    // console.log(sql);
-    db.query(sql, (err) => {
-      if (err) {
-        log.error('sql:', sql);
-        log.error('comments:', comments);
-        return cb(err);
-      }
       cb();
     });
   });
@@ -121,4 +71,3 @@ exports.mostRecentThread = function(cb) {
     });
   });
 };
-

@@ -1,16 +1,8 @@
-const pg = require('pg');
 const config = require('./config');
+const Sequelize = require('sequelize');
 
-let pool = new pg.Pool(config.pg);
+const db = new Sequelize(config.db.url, {
+  logging: false
+});
 
-module.exports = {
-  query: (text, values, cb) => {
-    pool.query(text, values, cb);
-      // pool.connect((err, client, done) => {
-      //   client.query(text, values, (err, result) => {
-      //     done();
-      //     cb(err, result);
-      //   });
-      // });
-  }
-};
+module.exports = db;

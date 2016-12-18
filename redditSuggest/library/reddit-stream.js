@@ -1,13 +1,31 @@
 const async = require('async');
+const Comments = require('../models/comments');
 const fs = require('fs');
 const log = require('better-logs')('reddit-stream');
-const reddit = require('../models/reddit');
+const reddit = require('./reddit');
 const request = require('request');
 const StringDecoder = require('string_decoder').StringDecoder;
 
 let decoder = new StringDecoder('utf8');
 
 let startId = fs.readFileSync('comment_id.txt', 'utf8');
+
+const sites = [
+  'amazon',
+  'shopineer',
+  'costco',
+  'bestbuy',
+  'bhphotovideo',
+  'newegg',
+  'microcenter',
+  'officedepot',
+  'microsoftstore',
+  'lenovo',
+  'hp',
+  'apple',
+  'dealsofamerica',
+  'ebay'
+];
 
 let extraChunk = '';
 const cargo = async.cargo((tasks, cargoCB) => {
@@ -20,29 +38,40 @@ const cargo = async.cargo((tasks, cargoCB) => {
       extraChunk = chunk;
       return;
     }
-    if (chunk.startsWith('data') && chunk.indexOf('https://www.amazon.com') >= 0) {
+    if (chunk.startsWith('data') && chunk.indexOf('.com') >= 0) {
       let parsed = JSON.parse(chunk.substring(5));
-      if (parsed.body_html.indexOf('https://www.amazon.com') === -1) return;
-      let row = [
-        parsed.author,
-        parsed.body_html,
-        parsed.id,
-        new Date(parsed.created_utc * 1000).toISOString(),
-        parsed.link_title,
-        parsed.name,
-        parsed.subreddit,
-        parsed.subreddit_id,
-        parsed.parent_id
-      ];
-      comments.push(row);
+      let found = false;
+      for (let i = 0; i < sites.length; i++) {
+        if (parsed.body_html.indexOf(sites[i]) > -1) {
+          found = true;
+          break;
+        }
+      }
+      if (found) {
+        let row = {
+          author: parsed.author, // author
+          // parsed.body,
+          body_html: parsed.body_html, // body_html
+          comment_id: parsed.id, // comment_id
+          created_utc: new Date(parsed.created_utc * 1000).toISOString(),
+          link_id: parsed.link_id, // link_id ? t3_5iww5l
+          name_id: parsed.name, // name ? t1_dbbr8kp
+          subreddit: parsed.subreddit, // subreddit
+          subreddit_id: parsed.subreddit_id, // subreddit_id
+          thread_id: parsed.parent_id // thread_id
+        }
+        comments.push(row);
+      }
     } else if (chunk.startsWith('id')) {
       startId = chunk.substring(3).trim();
     }
   });
   if (comments.length) {
-    reddit.saveComments(comments, (err) => {
-      if (err) log.error(err, comments);
-      log.info('saved', comments.length, 'comments');
+    Comments.bulkCreate(comments, (err) => {
+      if (err) {
+        log.error('Failed to bulk create comments with:', comments, err);
+      }
+      // log.info('saved', comments.length, 'comments');
       end();
     });
   } else {

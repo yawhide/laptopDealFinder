@@ -5,6 +5,8 @@ const fs = require('fs');
 const reddit = require('../models/reddit');
 const request = require('request');
 
+const Comments = require('../models/comments');
+
 const log = require('better-logs')('reddit-model');
 
 const subreddits = [
@@ -188,37 +190,44 @@ function formatSubredditForDb(child) {
   ];
 }
 
-function formatCommentForDb(child) {
+exports.formatCommentForDb = function (child) {
   if (child.kind !== 't1') return;
-  return [
-    //author: child.data.author,
-    //// body: child.data.body,
-    //body_html: child.data.body_html,
-    //comment_id: child.data.id,
-    //created_utc: new Date(child.data.created_utc * 1000).toISOString(),
-    //subreddit: child.data.subreddit,
-    //subreddit_id: child.data.subreddit_id,
-    //thread_id: child.data.parent_id
-    child.data.author,
+  if (!child.data.subreddit_id){
+    log.debug('child has no subreddit_id:', child)
+    process.exit(1);
+  }
+  if (!child.data.id){
+    log.debug('child has no id:', child)
+    process.exit(1);
+  }
+  if (!child.data.parent_id){
+    log.debug('child has no parent_id:', child)
+    process.exit(1);
+  }
+  // log.debug(child)
+  return {
+    author: child.data.author, // author
     // child.data.body,
-    child.data.body_html,
-    child.data.id,
-    new Date(child.data.created_utc * 1000).toISOString(),
-    child.data.subreddit,
-    child.data.subreddit_id,
-    child.data.parent_id
-  ];
+    body_html: child.data.body_html, // body_html
+    comment_id: child.data.id, // comment_id
+    created_utc: new Date(child.data.created_utc * 1000).toISOString(),
+    link_id: child.data.link_id, // link_id ? t3_5iww5l
+    name_id: child.data.name, // name ? t1_dbbr8kp
+    subreddit: child.data.subreddit, // subreddit
+    subreddit_id: child.data.subreddit_id, // subreddit_id
+    thread_id: child.data.parent_id // thread_id
+  };
 }
 
-function getAllComments(body) {
+function getAllCommentsFromThread(body) {
   let data = [];
   body.forEach(listing => {
     listing.data.children.forEach(child => {
       if (child.kind === 't1') {
-        let row = formatCommentForDb(child);
+        let row = exports.formatCommentForDb(child);
         if (!row) return [];
         if (child.data.replies) {
-          data = data.concat(getAllComments([child.data.replies]));
+          data = data.concat(getAllCommentsFromThread([child.data.replies]));
         }
         data.push(row);
       }
@@ -227,36 +236,28 @@ function getAllComments(body) {
   return data;
 }
 
-// getAllThreadsFromPastYear()
-
-// reddit.mostRecentThread((err, result) => {
-//   console.log(err)
-//   console.log(result.rows)
-// })
-
-// reddit.getThreads((err, result) => {
-//   console.log(err)
-//   console.log(JSON.stringify(result, null, 2));
-// });
-
-exports.getSomeComments = function (url, cb) {
+exports.getCommentsFromUrl = function (url, cb) {
   let now = new Date();
   _makeApiCall(url, { showmore: true}, (err, body) => {
     if (err) {
       log.error(`Failed to make api call, url: ${url}.`, err);
       return cb(err);
     }
-    let data = getAllComments(body);
+    let data = getAllCommentsFromThread(body);
     if (!_.get(data, 'length')) {
       log.debug(body, url)
-      process.exit(1);
+      let timeDiff = 1000 - (new Date() - now);
+      setTimeout(function () {
+        cb();
+      }, timeDiff >= 20 ? timeDiff : 20);
+      return;
     }
-    reddit.saveComments(data, (err) => {
+    Comments.bulkCreate(data, (err) => {
       if (err) {
         console.error(`Failed to save comments.`, err);
-        return;
+        return cb(err);
       }
-      console.info('successfully saved comments');
+      // console.info('successfully saved comments');
       let timeDiff = 1000 - (new Date() - now);
       setTimeout(function () {
         cb();

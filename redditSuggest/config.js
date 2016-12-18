@@ -15,6 +15,9 @@ let config = {
     userAgent: 'nodejs:UFHteMd7xbl14A:v0.0.1 (by /u/yawhide)',
     username: '???',
     password: '???'
+  },
+  db: {
+    url: 'postgres://localhost:5432/postgres'
   }
 };
 

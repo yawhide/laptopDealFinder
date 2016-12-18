@@ -17,6 +17,7 @@
     "pg": "^6.1.0",
     "pg-format": "^1.0.3",
     "request": "^2.79.0",
+    "sequelize": "^3.27.0",
     "serve-favicon": "~2.3.0",
     "snoowrap": "^1.11.3",
     "x-ray": "^2.3.1"
