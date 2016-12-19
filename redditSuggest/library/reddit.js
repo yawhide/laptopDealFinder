@@ -4,8 +4,12 @@ const config = require('../config');
 const fs = require('fs');
 const reddit = require('../models/reddit');
 const request = require('request');
+const url = require('url');
 
 const Comments = require('../models/comments');
+const klinkDetectionRegexp = /((?:(http|https|Http|Https|rtsp|Rtsp):\/\/(?:(?:[a-zA-Z0-9\$\-\_\.\+\!\*\'\(\)\,\;\?\&\=]|(?:\%[a-fA-F0-9]{2})){1,64}(?:\:(?:[a-zA-Z0-9\$\-\_\.\+\!\*\'\(\)\,\;\?\&\=]|(?:\%[a-fA-F0-9]{2})){1,25})?\@)?)?((?:(?:[a-zA-Z0-9][a-zA-Z0-9\-]{0,64}\.)+(?:(?:aero|arpa|asia|a[cdefgilmnoqrstuwxz])|(?:biz|b[abdefghijmnorstvwyz])|(?:cat|com|coop|c[acdfghiklmnoruvxyz])|d[ejkmoz]|(?:edu|e[cegrstu])|f[ijkmor]|(?:gov|g[abdefghilmnpqrstuwy])|h[kmnrtu]|(?:info|int|i[delmnoqrst])|(?:jobs|j[emop])|k[eghimnrwyz]|l[abcikrstuvy]|(?:mil|mobi|museum|m[acdghklmnopqrstuvwxyz])|(?:name|net|n[acefgilopruz])|(?:org|om)|(?:pro|p[aefghklmnrstwy])|qa|r[eouw]|s[abcdeghijklmnortuvyz]|(?:tel|travel|t[cdfghjklmnoprtvwz])|u[agkmsyz]|v[aceginu]|w[fs]|y[etu]|z[amw]))|(?:(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9])\.(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9]|0)\.(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9]|0)\.(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[0-9])))(?:\:\d{1,5})?)(\/(?:(?:[a-zA-Z0-9\;\/\?\:\@\&\=\#\~\-\.\+\!\*\'\(\)\,\_])|(?:\%[a-fA-F0-9]{2}))*)?(?:\b|$)/gi
+
+const websitesToKeep = ['amazon', 'shopineer', 'newegg'];
 
 const log = require('better-logs')('reddit-model');
 
@@ -204,7 +208,20 @@ exports.formatCommentForDb = function (child) {
     log.debug('child has no parent_id:', child)
     process.exit(1);
   }
-  // log.debug(child)
+  let uris = child.data.body_html.match(klinkDetectionRegexp) || [];
+  uris = uris.map(uri => {
+    let parsed = url.parse(uri);
+    if (!parsed.hostname) {
+      log.debug(child.data.body_html, uri)
+      return;
+    }
+    if (!_.find(websitesToKeep, (o) => parsed.hostname.indexOf(o) > -1)) return;
+    if (uri.indexOf('amazon') > -1) {
+      return `${uri.substring(0, 8)}${parsed.host}${parsed.pathname}`;
+    }
+    return uri;
+  }).filter(i=>i);
+  // log.debug(uris)
   return {
     author: child.data.author, // author
     // child.data.body,
@@ -215,7 +232,8 @@ exports.formatCommentForDb = function (child) {
     name_id: child.data.name, // name ? t1_dbbr8kp
     subreddit: child.data.subreddit, // subreddit
     subreddit_id: child.data.subreddit_id, // subreddit_id
-    thread_id: child.data.parent_id // thread_id
+    thread_id: child.data.parent_id, // thread_id
+    urls: uris,
   };
 }
 

@@ -13,10 +13,11 @@ let startId = fs.readFileSync('comment_id.txt', 'utf8');
 const sites = [
   'amazon',
   'shopineer',
+  'newegg',
+  // prob ignore below
   'costco',
   'bestbuy',
   'bhphotovideo',
-  'newegg',
   'microcenter',
   'officedepot',
   'microsoftstore',
@@ -24,7 +25,8 @@ const sites = [
   'hp',
   'apple',
   'dealsofamerica',
-  'ebay'
+  'ebay',
+  'dell'
 ];
 
 let extraChunk = '';

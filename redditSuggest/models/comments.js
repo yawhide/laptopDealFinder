@@ -12,6 +12,7 @@ const Comments = db.define('comments', {
   subreddit:    { type: Sequelize.STRING },
   subreddit_id: { type: Sequelize.STRING },
   thread_id:    { type: Sequelize.STRING },
+  url:          { type: Sequelize.ARRAY(Sequelize.TEXT) },
 }, {
   freezeTableName: true,
   timestamps: true,
@@ -42,4 +43,8 @@ exports.findAll = function (cb) {
       cb(null, rows.map(row => row.get({ plain: true })));
     })
     .catch(cb);
+}
+
+exports.groupByUrl = function (cb) {
+
 }
