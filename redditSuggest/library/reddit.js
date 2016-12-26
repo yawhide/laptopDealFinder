@@ -208,19 +208,7 @@ exports.formatCommentForDb = function (child) {
     log.debug('child has no parent_id:', child)
     process.exit(1);
   }
-  let uris = child.data.body_html.match(klinkDetectionRegexp) || [];
-  uris = uris.map(uri => {
-    let parsed = url.parse(uri);
-    if (!parsed.hostname) {
-      log.debug(child.data.body_html, uri)
-      return;
-    }
-    if (!_.find(websitesToKeep, (o) => parsed.hostname.indexOf(o) > -1)) return;
-    if (uri.indexOf('amazon') > -1) {
-      return `${uri.substring(0, 8)}${parsed.host}${parsed.pathname}`;
-    }
-    return uri;
-  }).filter(i=>i);
+  let uris = exports.parsedUrlsFromBody(child.data.body_html);
   // log.debug(uris)
   return {
     author: child.data.author, // author
@@ -237,17 +225,35 @@ exports.formatCommentForDb = function (child) {
   };
 }
 
+exports.parsedUrlsFromBody = function (body) {
+  let uris = body.match(klinkDetectionRegexp) || [];
+  uris = uris.map(uri => {
+    let parsed = url.parse(uri);
+    if (!parsed.hostname) {
+      log.debug(body, uri)
+      return;
+    }
+    if (!_.find(websitesToKeep, (o) => parsed.hostname.indexOf(o) > -1)) return;
+    if (uri.indexOf('amazon') > -1) {
+      return `${uri.substring(0, 8)}${parsed.host}${parsed.pathname}`;
+    }
+    return uri;
+  }).filter(i=>i);
+  return uris;
+}
+
 function getAllCommentsFromThread(body) {
   let data = [];
   body.forEach(listing => {
     listing.data.children.forEach(child => {
       if (child.kind === 't1') {
-        let row = exports.formatCommentForDb(child);
-        if (!row) return [];
         if (child.data.replies) {
           data = data.concat(getAllCommentsFromThread([child.data.replies]));
         }
-        data.push(row);
+        let row = exports.formatCommentForDb(child);
+        if (Comments.validate(row)) {
+          data.push(row);
+        }
       }
     });
   });

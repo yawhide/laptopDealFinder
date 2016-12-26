@@ -51,20 +51,11 @@ const cargo = async.cargo((tasks, cargoCB) => {
       }
       if (found) {
         let row = reddit.formatCommentForDb({ kind: 't1', data: parsed });
-        // log.debug(row)
-        // {
-        //   author: parsed.author, // author
-        //   // parsed.body,
-        //   body_html: parsed.body_html, // body_html
-        //   comment_id: parsed.id, // comment_id
-        //   created_utc: new Date(parsed.created_utc * 1000).toISOString(),
-        //   link_id: parsed.link_id, // link_id ? t3_5iww5l
-        //   name_id: parsed.name, // name ? t1_dbbr8kp
-        //   subreddit: parsed.subreddit, // subreddit
-        //   subreddit_id: parsed.subreddit_id, // subreddit_id
-        //   thread_id: parsed.parent_id // thread_id
-        // }
-        comments.push(row);
+        if (Comments.validate(row)) {
+          comments.push(row);
+        } else {
+          log.debug('failed validation for comments row, parsed:', parsed);
+        }
       }
     } else if (chunk.startsWith('id')) {
       startId = chunk.substring(3).trim();
