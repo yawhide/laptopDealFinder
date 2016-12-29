@@ -1,5 +1,8 @@
 const _ = require('lodash');
 const db = require('../db.js');
+
+//TODO
+return;
 const Sequelize = require('sequelize');
 
 const Threads = db.define('threads', {

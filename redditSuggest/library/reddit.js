@@ -208,7 +208,7 @@ exports.formatCommentForDb = function (child) {
     log.debug('child has no parent_id:', child)
     process.exit(1);
   }
-  let uris = exports.parsedUrlsFromBody(child.data.body_html);
+  let uris = exports.parsedUrlsFromBody(child.data.body);
   // log.debug(uris)
   return {
     author: child.data.author, // author
@@ -221,7 +221,7 @@ exports.formatCommentForDb = function (child) {
     subreddit: child.data.subreddit, // subreddit
     subreddit_id: child.data.subreddit_id, // subreddit_id
     thread_id: child.data.parent_id, // thread_id
-    urls: uris,
+    urls,
   };
 }
 
@@ -230,7 +230,7 @@ exports.parsedUrlsFromBody = function (body) {
   uris = uris.map(uri => {
     let parsed = url.parse(uri);
     if (!parsed.hostname) {
-      log.debug(body, uri)
+      log.debug('body:', body, 'uri:', uri)
       return;
     }
     if (!_.find(websitesToKeep, (o) => parsed.hostname.indexOf(o) > -1)) return;
@@ -289,9 +289,3 @@ exports.getCommentsFromUrl = function (url, cb) {
     });
   });
 }
-
-
-
-//TODO rss feed for comments
-// https://www.reddit.com/r/SuggestALaptop/comments/.rss
-// https://github.com/danmactough/node-feedparser
