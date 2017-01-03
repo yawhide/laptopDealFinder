@@ -167,7 +167,7 @@ exports.bulkCreateFromComment = function (comment, cb) {
         process.exit(1);
         return;
       }
-      sql = pgFormat(`INSERT INTO comments_laptops (comments_id, laptops_store, laptops_store_id) VALUES %L ON CONFLICT DO NOTHING;`, values.map(value => [comment.id].concat(value.slice(0, 2))));
+      sql = pgFormat(`INSERT INTO comments_laptops (comment_id, subreddit_id, thread_id, store, store_id) VALUES %L ON CONFLICT DO NOTHING;`, values.map(value => [comment.comment_id, comment.subreddit_id, comment.thread_id].concat(value.slice(0, 2))));
       db.query(sql, (err, result) => {
         if (err) {
           log.error(err);

@@ -1,9 +1,12 @@
-var express = require('express');
-var router = express.Router();
+const CommentsLaptops = require('../models/comments_laptops');
+const express = require('express');
+const router = express.Router();
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
-  res.render('index', { title: 'Express' });
+  CommentsLaptops.getAllMentions((err, rows) => {
+    res.render('index', { mentions: rows });
+  })
 });
 
 module.exports = router;

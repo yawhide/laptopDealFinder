@@ -1,11 +1,19 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title><%= title %></title>
+    <title>Reddit Recommends</title>
     <link rel='stylesheet' href='/stylesheets/style.css' />
   </head>
   <body>
-    <h1><%= title %></h1>
-    <p>Welcome to <%= title %></p>
+    <h1>Reddit Recommends</h1>
+      <ol>
+        <% for(var i=0; i<mentions.length; i++) { %>
+          <li>
+            <div><%= mentions[i].title %></div>
+            <div>Price: $<%= mentions[i].price %></div>
+            <div>mentions: <%= mentions[i].c %></div>
+          </li>
+        <% } %>
+      </ol>
   </body>
 </html>
