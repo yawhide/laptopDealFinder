@@ -1,0 +1,14 @@
+{% extends 'layout.nunjucks' %}
+
+{% block content %}
+  <h1>Reddit Recommends</h1>
+  <ol>
+    {% for mention in mentions %}
+      <li>
+        <div>{{ mention.title }}</div>
+        <div>Price: ${{ mention.price }}</div>
+        <div>mentions: {{ mention.c }}</div>
+      </li>
+    {% endfor %}
+  </ol>
+{% endblock %}
